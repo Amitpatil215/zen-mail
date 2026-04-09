@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { getServerDb, nowMs } from "@/lib/firestore/server";
 
-const Body = z.record(z.unknown());
+const Body = z.record(z.string(), z.unknown());
 
 function requireWebhookSecret(request: Request) {
   const expected = process.env.SES_WEBHOOK_SECRET;

@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 type Cred = {
   id: string;
   email_domain: string;
@@ -7,9 +9,11 @@ type Cred = {
   status: string;
   default_from_name: string;
   default_from_email: string;
+  ses_access_key: string;
+  ses_secret_key: string;
 };
 
-function IconButton(props: { title: string; onClick: () => void; children: JSX.Element }) {
+function IconButton(props: { title: string; onClick: () => void; children: ReactNode }) {
   return (
     <button
       type="button"
