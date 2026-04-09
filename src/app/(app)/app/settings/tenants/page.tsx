@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { setActiveTenantId } from "@/lib/tenants/activeTenant";
+import { getActiveTenantId, setActiveTenantId } from "@/lib/tenants/activeTenant";
 
 type Tenant = { id: string; name: string };
 
@@ -30,10 +30,33 @@ async function authedFetch(path: string, init?: RequestInit) {
   });
 }
 
+async function copyToClipboard(text: string) {
+  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  // Fallback for older browsers / stricter permissions.
+  const el = document.createElement("textarea");
+  el.value = text;
+  el.setAttribute("readonly", "");
+  el.style.position = "fixed";
+  el.style.top = "-1000px";
+  el.style.left = "-1000px";
+  document.body.appendChild(el);
+  el.select();
+  document.execCommand("copy");
+  document.body.removeChild(el);
+}
+
 export default function TenantSettingsPage() {
   const router = useRouter();
   const [state, setState] = useState<State>({ kind: "loading" });
   const [newTenantName, setNewTenantName] = useState("My Org");
+  const [activeTenantId, setActiveTenantIdState] = useState<string | null>(null);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">(
+    "idle"
+  );
 
   const tenants = useMemo(
     () => (state.kind === "ready" ? state.tenants : []),
@@ -41,6 +64,8 @@ export default function TenantSettingsPage() {
   );
 
   useEffect(() => {
+    setActiveTenantIdState(getActiveTenantId());
+
     (async () => {
       try {
         const res = await authedFetch("/api/tenants");
@@ -84,6 +109,43 @@ export default function TenantSettingsPage() {
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="text-sm font-medium">Tenant ID</div>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-background px-4 py-3">
+          <div className="min-w-0">
+            <div className="truncate font-mono text-sm">
+              {activeTenantId ?? "No tenant selected"}
+            </div>
+            {copyState === "copied" ? (
+              <div className="mt-1 text-xs text-muted-foreground">Copied.</div>
+            ) : null}
+            {copyState === "error" ? (
+              <div className="mt-1 text-xs text-destructive">
+                Couldn’t copy.
+              </div>
+            ) : null}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!activeTenantId}
+            onClick={async () => {
+              if (!activeTenantId) return;
+              setCopyState("idle");
+              try {
+                await copyToClipboard(activeTenantId);
+                setCopyState("copied");
+                window.setTimeout(() => setCopyState("idle"), 1200);
+              } catch {
+                setCopyState("error");
+              }
+            }}
+          >
+            Copy
+          </Button>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-5">
         <div className="text-sm font-medium">Select tenant</div>
         {state.kind === "loading" ? (
           <div className="mt-2 text-sm text-muted-foreground">Loading…</div>
@@ -100,6 +162,7 @@ export default function TenantSettingsPage() {
                   className="flex items-center justify-between rounded-xl border border-border bg-background px-4 py-3 text-left hover:bg-muted"
                   onClick={() => {
                     setActiveTenantId(t.id);
+                    setActiveTenantIdState(t.id);
                     router.replace("/app");
                   }}
                   type="button"

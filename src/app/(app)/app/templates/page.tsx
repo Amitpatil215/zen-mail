@@ -19,6 +19,24 @@ function formatTs(ts?: number) {
   }
 }
 
+async function copyToClipboard(text: string) {
+  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const el = document.createElement("textarea");
+  el.value = text;
+  el.setAttribute("readonly", "");
+  el.style.position = "fixed";
+  el.style.top = "-1000px";
+  el.style.left = "-1000px";
+  document.body.appendChild(el);
+  el.select();
+  document.execCommand("copy");
+  document.body.removeChild(el);
+}
+
 export default function TemplatesPage() {
   const tenantId = useMemo(() => getActiveTenantId(), []);
   const [items, setItems] = useState<TemplateRow[]>([]);
@@ -141,6 +159,19 @@ export default function TemplatesPage() {
                   <span className="font-medium text-muted-foreground md:hidden">Updated: </span>
                   {formatTs(t.updated_at)}
                 </div>
+                <button
+                  className="text-xs text-muted-foreground hover:underline"
+                  onClick={async () => {
+                    try {
+                      await copyToClipboard(t.id);
+                    } catch {
+                      // ignore
+                    }
+                  }}
+                  type="button"
+                >
+                  Copy ID
+                </button>
                 <Link className="text-xs hover:underline" href={`/app/templates/${t.id}`}>
                   Edit
                 </Link>

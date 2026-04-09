@@ -19,9 +19,28 @@ function parseJsonOrThrow(text: string): unknown {
   }
 }
 
+async function copyToClipboard(text: string) {
+  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const el = document.createElement("textarea");
+  el.value = text;
+  el.setAttribute("readonly", "");
+  el.style.position = "fixed";
+  el.style.top = "-1000px";
+  el.style.left = "-1000px";
+  document.body.appendChild(el);
+  el.select();
+  document.execCommand("copy");
+  document.body.removeChild(el);
+}
+
 export function TemplateEditor(props: {
   initial: Draft;
   mode: "create" | "edit";
+  templateId?: string;
   onSave: (draft: Draft) => Promise<void>;
   onCancelHref: string;
 }) {
@@ -34,6 +53,9 @@ export function TemplateEditor(props: {
   const [autoRender, setAutoRender] = useState(true);
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [previewExpanded, setPreviewExpanded] = useState(false);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">(
+    "idle"
+  );
   const lastReqId = useRef(0);
 
   const requiredVars = useMemo(() => {
@@ -122,6 +144,43 @@ export function TemplateEditor(props: {
           </Button>
         </div>
       </div>
+
+      {props.mode === "edit" && props.templateId ? (
+        <div className="rounded-2xl border border-border bg-card p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-xs font-medium text-muted-foreground">
+                Template ID
+              </div>
+              <div className="mt-1 truncate font-mono text-sm">
+                {props.templateId}
+              </div>
+              {copyState === "copied" ? (
+                <div className="mt-1 text-xs text-muted-foreground">Copied.</div>
+              ) : null}
+              {copyState === "error" ? (
+                <div className="mt-1 text-xs text-destructive">Couldn’t copy.</div>
+              ) : null}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                setCopyState("idle");
+                try {
+                  await copyToClipboard(props.templateId!);
+                  setCopyState("copied");
+                  window.setTimeout(() => setCopyState("idle"), 1200);
+                } catch {
+                  setCopyState("error");
+                }
+              }}
+            >
+              Copy
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       {savedMsg ? <div className="text-sm text-emerald-600">{savedMsg}</div> : null}
       <div className="grid gap-4 lg:grid-cols-2">

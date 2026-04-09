@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { getActiveTenantId } from "@/lib/tenants/activeTenant";
 import { CreateJobDialog } from "./CreateJobDialog";
+import { JobRow } from "./JobRow";
 
 type Job = {
   id: string;
@@ -13,6 +14,20 @@ type Job = {
   retry_count: number;
   last_error?: string | null;
   created_at?: number;
+  type?: string | null;
+  from_email?: string | null;
+  from_name?: string | null;
+  cc?: string[] | null;
+  bcc?: string[] | null;
+  template_id?: string | null;
+  ses_credential_id?: string | null;
+  ses_message_id?: string | null;
+  max_retries?: number | null;
+  scheduled_at?: number | null;
+  next_attempt_at?: number | null;
+  locked_at?: number | null;
+  locked_by?: string | null;
+  updated_at?: number | null;
 };
 
 async function authedFetch(path: string, init?: RequestInit) {
@@ -80,25 +95,7 @@ export default function JobsPage() {
         <div className="mt-4 grid gap-2">
           {jobs.length ? (
             jobs.map((j) => (
-              <div
-                key={j.id}
-                className="rounded-xl border border-border bg-background px-4 py-3"
-              >
-                <div className="flex items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-medium">{j.subject}</div>
-                    <div className="mt-0.5 truncate text-xs text-muted-foreground">
-                      {j.to?.join(", ") || "—"}
-                    </div>
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {j.status} • retries {j.retry_count}
-                  </div>
-                </div>
-                {j.last_error ? (
-                  <div className="mt-2 text-xs text-destructive">{j.last_error}</div>
-                ) : null}
-              </div>
+              <JobRow key={j.id} job={j} />
             ))
           ) : (
             <div className="text-sm text-muted-foreground">No jobs yet.</div>

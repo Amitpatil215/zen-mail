@@ -52,6 +52,7 @@ export default function EditTemplatePage() {
   return (
     <TemplateEditor
       mode="edit"
+      templateId={templateId}
       initial={initial ?? defaultTemplateDraft()}
       onCancelHref="/app/templates"
       onSave={async (draft) => {
