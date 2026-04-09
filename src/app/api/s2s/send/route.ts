@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { verifyTenantApiKey } from "@/lib/api/apiKey";
+import { ApiKeyAuthError, verifyTenantApiKey } from "@/lib/api/apiKey";
 import { getServerDb, nowMs } from "@/lib/firestore/server";
 import type { EmailJobDoc, EmailJobType } from "@/lib/firestore/schema";
 import { sha256Hex } from "@/lib/crypto/hash";
@@ -14,7 +14,7 @@ const Body = z.object({
   subject: z.string().trim().min(1).max(200),
   raw_html: z.string().optional(),
   raw_text: z.string().optional(),
-  variables: z.record(z.unknown()).optional().default({}),
+  variables: z.record(z.string(), z.unknown()).optional().default({}),
   scheduled_at: z.number().int().optional(),
   idempotency_key: z.string().trim().min(8).max(200),
   max_retries: z.number().int().min(0).max(10).optional().default(3),
@@ -25,7 +25,14 @@ export async function POST(request: Request) {
     const rawKey = request.headers.get("x-api-key")?.trim();
     if (!rawKey) return new Response("Missing x-api-key", { status: 401 });
     const body = Body.parse(await request.json());
-    await verifyTenantApiKey(body.tenant_id, rawKey);
+    try {
+      await verifyTenantApiKey(body.tenant_id, rawKey);
+    } catch (e) {
+      if (e instanceof ApiKeyAuthError) {
+        return new Response(e.message, { status: 401 });
+      }
+      throw e;
+    }
 
     const db = getServerDb();
     const now = nowMs();
@@ -70,6 +77,12 @@ export async function POST(request: Request) {
     await ref.set(job);
     return Response.json({ job: { id: ref.id, status: job.status } });
   } catch (e) {
+    if (e instanceof z.ZodError) {
+      return Response.json(
+        { error: "Invalid request body", issues: e.issues },
+        { status: 400 }
+      );
+    }
     return new Response(e instanceof Error ? e.message : "Bad request", {
       status: 400,
     });

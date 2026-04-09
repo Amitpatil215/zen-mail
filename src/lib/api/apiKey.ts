@@ -1,6 +1,10 @@
 import { sha256Hex } from "@/lib/crypto/hash";
 import { getServerDb } from "@/lib/firestore/server";
 
+export class ApiKeyAuthError extends Error {
+  name = "ApiKeyAuthError";
+}
+
 export async function verifyTenantApiKey(tenantId: string, rawKey: string) {
   const keyHash = sha256Hex(rawKey);
   const db = getServerDb();
@@ -13,7 +17,7 @@ export async function verifyTenantApiKey(tenantId: string, rawKey: string) {
     .limit(1)
     .get();
   const doc = snaps.docs[0];
-  if (!doc) throw new Error("Invalid API key.");
+  if (!doc) throw new ApiKeyAuthError("Invalid API key.");
   await doc.ref.set({ last_used_at: Date.now() }, { merge: true });
   return { keyId: doc.id };
 }
