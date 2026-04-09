@@ -1,0 +1,91 @@
+import { SendEmailCommand } from "@aws-sdk/client-ses";
+import { getServerDb } from "@/lib/firestore/server";
+import type { EmailJobDoc, TemplateDoc } from "@/lib/firestore/schema";
+import { renderLiquid } from "@/lib/templates/liquid";
+import { createSesClient, type SesCredsDoc } from "@/lib/ses/client";
+import { signParams } from "@/lib/crypto/signing";
+
+async function getLiveSesCreds(tenantId: string): Promise<SesCredsDoc> {
+  const db = getServerDb();
+  const snaps = await db
+    .collection("tenants")
+    .doc(tenantId)
+    .collection("ses_credentials")
+    .where("status", "==", "live")
+    .limit(1)
+    .get();
+  const doc = snaps.docs[0];
+  if (!doc) throw new Error("No live SES credentials configured.");
+  return doc.data() as SesCredsDoc;
+}
+
+async function renderTemplate(tenantId: string, templateId: string, vars: unknown) {
+  const db = getServerDb();
+  const snap = await db
+    .collection("tenants")
+    .doc(tenantId)
+    .collection("templates")
+    .doc(templateId)
+    .get();
+  if (!snap.exists) throw new Error("Template not found.");
+  const tpl = snap.data() as TemplateDoc;
+  const subject = await renderLiquid(tpl.subject, vars);
+  const html = await renderLiquid(tpl.body_html, vars);
+  const text = tpl.body_text ? await renderLiquid(tpl.body_text, vars) : null;
+  return { subject, html, text };
+}
+
+export async function sendEmailJob(params: {
+  tenantId: string;
+  jobId: string;
+  job: EmailJobDoc;
+}) {
+  const creds = await getLiveSesCreds(params.tenantId);
+  const ses = createSesClient(creds);
+
+  const from = creds.default_from_email;
+  if (!from) throw new Error("default_from_email not configured.");
+
+  let subject = params.job.subject;
+  let htmlBody: string | null = params.job.raw_html ?? null;
+  let textBody: string | null = params.job.raw_text ?? null;
+
+  if (params.job.type === "template") {
+    const templateId = params.job.template_id;
+    if (!templateId) throw new Error("Missing template_id.");
+    const rendered = await renderTemplate(params.tenantId, templateId, params.job.variables);
+    subject = rendered.subject;
+    htmlBody = rendered.html;
+    textBody = rendered.text;
+  }
+
+  if (!htmlBody && !textBody) throw new Error("Email must have html or text.");
+
+  const baseUrl = process.env.PUBLIC_BASE_URL?.replace(/\/$/, "") ?? "";
+  if (baseUrl && htmlBody) {
+    const sig = signParams({ t: params.tenantId, j: params.jobId });
+    const pixel = `${baseUrl}/t/open?t=${encodeURIComponent(params.tenantId)}&j=${encodeURIComponent(params.jobId)}&sig=${sig}`;
+    htmlBody = `${htmlBody}\n<img src="${pixel}" width="1" height="1" style="display:none" alt="" />`;
+  }
+
+  const cmd = new SendEmailCommand({
+    Source: from,
+    Destination: {
+      ToAddresses: params.job.to,
+      CcAddresses: params.job.cc,
+      BccAddresses: params.job.bcc,
+    },
+    ReplyToAddresses: creds.default_reply_to_email ? [creds.default_reply_to_email] : undefined,
+    Message: {
+      Subject: { Data: subject, Charset: "UTF-8" },
+      Body: {
+        Html: htmlBody ? { Data: htmlBody, Charset: "UTF-8" } : undefined,
+        Text: textBody ? { Data: textBody, Charset: "UTF-8" } : undefined,
+      },
+    },
+  });
+
+  const res = await ses.send(cmd);
+  return { messageId: res.MessageId ?? null };
+}
+

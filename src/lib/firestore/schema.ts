@@ -1,0 +1,100 @@
+export type UserRole = "owner" | "admin" | "member";
+
+export type TenantDoc = {
+  name: string;
+  created_at: number;
+  updated_at: number;
+};
+
+export type UserTenantDoc = {
+  user_id: string;
+  tenant_id: string;
+  role: UserRole;
+  created_at: number;
+  updated_at: number;
+};
+
+export type PersonDoc = {
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  tags: string[];
+  custom: Record<string, unknown>;
+  unsubscribed_at?: number | null;
+  created_at: number;
+  updated_at: number;
+};
+
+export type TemplateDoc = {
+  name: string;
+  subject: string;
+  body_html: string;
+  body_text?: string | null;
+  labels: string[];
+  sample_data: Record<string, unknown>;
+  created_at: number;
+  updated_at: number;
+};
+
+export type EmailJobStatus = "queued" | "processing" | "sent" | "failed";
+export type EmailJobType = "template" | "raw_html" | "raw_text";
+
+export type EmailJobDoc = {
+  type: EmailJobType;
+  template_id?: string | null;
+  to: string[];
+  cc: string[];
+  bcc: string[];
+  subject: string;
+  raw_html?: string | null;
+  raw_text?: string | null;
+  variables: Record<string, unknown>;
+  status: EmailJobStatus;
+  scheduled_at: number;
+  next_attempt_at: number;
+  idempotency_key: string;
+  retry_count: number;
+  max_retries: number;
+  locked_at?: number | null;
+  locked_by?: string | null;
+  ses_message_id?: string | null;
+  last_error?: string | null;
+  created_at: number;
+  updated_at: number;
+};
+
+export type ApiKeyDoc = {
+  name: string;
+  key_hash: string;
+  created_at: number;
+  updated_at: number;
+  last_used_at?: number | null;
+  revoked_at?: number | null;
+};
+
+export type AssetDoc = {
+  url: string;
+  file_name: string;
+  folder: string;
+  content_type: string;
+  size: number;
+  created_at: number;
+};
+
+export type EmailEventType =
+  | "delivered"
+  | "bounced"
+  | "complaint"
+  | "opened"
+  | "clicked"
+  | "unsubscribed";
+
+export type EmailEventDoc = {
+  job_id?: string | null;
+  ses_message_id?: string | null;
+  type: EmailEventType;
+  provider: "ses";
+  payload: Record<string, unknown>;
+  created_at: number;
+};
+

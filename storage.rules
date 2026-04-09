@@ -1,0 +1,20 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isTenantMember(tenantId) {
+      // Mirror of Firestore membership doc.
+      return isSignedIn()
+        && exists(/databases/(default)/documents/tenants/$(tenantId)/members/$(request.auth.uid));
+    }
+
+    // Tenant-scoped uploads. You can later expand to make some folders public.
+    match /tenants/{tenantId}/{allPaths=**} {
+      allow read, write: if isTenantMember(tenantId);
+    }
+  }
+}
+
