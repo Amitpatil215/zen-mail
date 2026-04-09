@@ -19,6 +19,32 @@ function FeatureCard({
   );
 }
 
+function StepCard({
+  step,
+  title,
+  children,
+}: {
+  step: string;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <div className="flex items-start gap-3">
+        <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-sm font-semibold text-primary">
+          {step}
+        </div>
+        <div className="min-w-0">
+          <h3 className="text-base font-semibold tracking-tight">{title}</h3>
+          <div className="mt-2 text-sm leading-6 text-muted-foreground">
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function LandingPage() {
   return (
     <div className="mx-auto w-full max-w-6xl px-6 py-14">
@@ -70,10 +96,26 @@ export default function LandingPage() {
 
         <section id="how-it-works" className="grid gap-4">
           <h2 className="text-xl font-semibold tracking-tight">How it works</h2>
+          <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+            Keep SES as your sending provider, then let Zen Mail handle templates,
+            scheduling, retries, and monitoring.
+          </p>
+          <div className="grid gap-4 md:grid-cols-3">
+            <StepCard step="1" title="Register your SES sender">
+              Add (and verify) your sender email or domain in AWS SES, then save
+              your SES credentials in Zen Mail.
+            </StepCard>
+            <StepCard step="2" title="Build templates & audiences">
+              Create templates with variables, preview them, and manage people +
+              tags in one place.
+            </StepCard>
+            <StepCard step="3" title="Schedule sends & monitor delivery">
+              Schedule email jobs via UI or API. Zen Mail handles queueing,
+              retries, and records delivery events.
+            </StepCard>
+          </div>
           <div className="rounded-2xl border border-border bg-card p-6">
-            <div className="text-sm text-muted-foreground">
-              Event-driven architecture
-            </div>
+            <div className="text-sm text-muted-foreground">Under the hood</div>
             <div className="mt-2 font-mono text-sm">
               API → Firestore → Queue → Worker → SES
             </div>
@@ -101,6 +143,61 @@ export default function LandingPage() {
             <FeatureCard title="Assets + API keys">
               Foldered assets for email images and S2S API keys.
             </FeatureCard>
+          </div>
+        </section>
+
+        <section id="developers" className="grid gap-4">
+          <div className="flex flex-col gap-1">
+            <h2 className="text-xl font-semibold tracking-tight">
+              For developers
+            </h2>
+            <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+              Scheduling an email is a single API call. Zen Mail stores the job,
+              queues it, and sends it at the scheduled time.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-border bg-card p-6">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="text-sm font-medium">Create a scheduled job</div>
+              <div className="text-xs text-muted-foreground">
+                POST <span className="font-mono">/api/email-jobs</span>
+              </div>
+            </div>
+            <pre className="mt-4 overflow-x-auto rounded-xl border border-border bg-muted p-4 text-xs leading-5">
+              <code>{`curl -X POST "$BASE_URL/api/email-jobs" \\
+  -H "Authorization: Bearer $ID_TOKEN" \\
+  -H "x-tenant-id: $TENANT_ID" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "type": "template",
+    "template_id": "welcome_email",
+    "to": ["person@example.com"],
+    "subject": "Welcome to Zen Mail",
+    "variables": { "firstName": "Ada" },
+    "scheduled_at": 1760000000000,
+    "idempotency_key": "welcome_email_person@example.com_1760000000000",
+    "max_retries": 3
+  }'`}</code>
+            </pre>
+            <ul className="mt-4 grid gap-2 text-sm text-muted-foreground md:grid-cols-2">
+              <li>
+                <span className="font-medium text-foreground">
+                  Idempotency built-in
+                </span>
+                : repeated calls with the same{" "}
+                <span className="font-mono">idempotency_key</span> return the
+                same job.
+              </li>
+              <li>
+                <span className="font-medium text-foreground">
+                  Schedule in epoch ms
+                </span>
+                : set{" "}
+                <span className="font-mono">scheduled_at</span> (or omit it to
+                send immediately).
+              </li>
+            </ul>
           </div>
         </section>
       </main>
