@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { setActiveTenantId } from "@/lib/tenants/activeTenant";
 
 type SignInState =
   | { kind: "idle" }
@@ -35,6 +36,37 @@ export default function SignInPage() {
     });
   }, [router]);
 
+  async function ensureTenantAndSelectDefault() {
+    const { getClientAuth } = await import("@/lib/firebase/client");
+    const token = await getClientAuth().currentUser?.getIdToken();
+    if (!token) throw new Error("Not signed in.");
+
+    const res = await fetch("/api/tenants", {
+      headers: { authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const data = (await res.json()) as { tenants: Array<{ id: string; name: string }> };
+
+    if (data.tenants.length > 0) {
+      setActiveTenantId(data.tenants[0]!.id);
+      return;
+    }
+
+    const created = await fetch("/api/tenants", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ name: "My Org" }),
+    });
+    if (!created.ok) throw new Error(await created.text());
+    const createdData = (await created.json()) as {
+      tenant: { id: string; name: string };
+    };
+    setActiveTenantId(createdData.tenant.id);
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
@@ -54,7 +86,11 @@ export default function SignInPage() {
           typeof err === "object" && err !== null && "code" in err
             ? String((err as { code?: unknown }).code)
             : "";
-        if (code === "auth/user-not-found" || code === "auth/invalid-login-credentials") {
+        if (
+          code === "auth/user-not-found" ||
+          code === "auth/invalid-login-credentials" ||
+          code === "auth/invalid-credential"
+        ) {
           try {
             await createUserWithEmailAndPassword(auth, emailTrimmed, password);
           } catch (createErr) {
@@ -68,6 +104,7 @@ export default function SignInPage() {
           }
         } else throw err;
       }
+      await ensureTenantAndSelectDefault();
       router.replace("/app");
     } catch (err) {
       setState({

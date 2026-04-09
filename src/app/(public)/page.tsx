@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { AuthButton } from "@/components/auth/AuthButton";
 
 function FeatureCard({
   title,
@@ -33,14 +34,7 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button asChild variant="ghost">
-            <Link href="/sign-in">Sign in</Link>
-          </Button>
-          <Button asChild>
-            <Link href="/app">Open dashboard</Link>
-          </Button>
-        </div>
+        <AuthButton />
       </header>
 
       <main className="mt-12 grid gap-12">

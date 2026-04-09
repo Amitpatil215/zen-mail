@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { AuthGate } from "@/components/auth/AuthGate";
 import { TenantGate } from "@/components/tenants/TenantGate";
+import { AuthButton } from "@/components/auth/AuthButton";
 
 const navItems: Array<{ href: string; label: string }> = [
   { href: "/app", label: "Overview" },
@@ -56,12 +57,7 @@ function Topbar() {
         >
           Landing
         </Link>
-        <Link
-          className="rounded-xl border border-border px-3 py-1.5 text-sm hover:bg-muted"
-          href="/sign-in"
-        >
-          Sign in
-        </Link>
+        <AuthButton />
       </div>
     </header>
   );
