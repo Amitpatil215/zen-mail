@@ -1,8 +1,14 @@
 import { GetSendQuotaCommand } from "@aws-sdk/client-ses";
+import { z } from "zod";
 import { requireIdToken } from "@/lib/api/auth";
 import { requireTenantMembership } from "@/lib/api/tenant";
-import { getServerDb } from "@/lib/firestore/server";
-import { createSesClient, type SesCredsDoc } from "@/lib/ses/client";
+import { createSesClient } from "@/lib/ses/client";
+
+const Body = z.object({
+  region: z.string().trim().min(1).max(40),
+  ses_access_key: z.string().trim().min(8).max(200),
+  ses_secret_key: z.string().trim().min(8).max(200),
+});
 
 export async function POST(request: Request) {
   try {
@@ -11,19 +17,8 @@ export async function POST(request: Request) {
     if (!tenantId) return new Response("Missing x-tenant-id", { status: 400 });
     await requireTenantMembership(tenantId, user.uid);
 
-    const db = getServerDb();
-    const snaps = await db
-      .collection("tenants")
-      .doc(tenantId)
-      .collection("ses_credentials")
-      .where("status", "==", "live")
-      .limit(1)
-      .get();
-    const doc = snaps.docs[0];
-    if (!doc) return new Response("No live SES credentials to test.", { status: 400 });
-    const creds = doc.data() as SesCredsDoc;
-
-    const ses = createSesClient(creds);
+    const body = Body.parse(await request.json());
+    const ses = createSesClient(body);
     const quota = await ses.send(new GetSendQuotaCommand({}));
     return Response.json({ ok: true, quota });
   } catch (e) {

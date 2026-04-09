@@ -5,17 +5,17 @@ import { renderLiquid } from "@/lib/templates/liquid";
 import { createSesClient, type SesCredsDoc } from "@/lib/ses/client";
 import { signParams } from "@/lib/crypto/signing";
 
-async function getLiveSesCreds(tenantId: string): Promise<SesCredsDoc> {
+async function getSesCreds(tenantId: string): Promise<SesCredsDoc> {
   const db = getServerDb();
   const snaps = await db
     .collection("tenants")
     .doc(tenantId)
     .collection("ses_credentials")
-    .where("status", "==", "live")
+    .orderBy("updated_at", "desc")
     .limit(1)
     .get();
   const doc = snaps.docs[0];
-  if (!doc) throw new Error("No live SES credentials configured.");
+  if (!doc) throw new Error("No SES credentials configured.");
   return doc.data() as SesCredsDoc;
 }
 
@@ -40,7 +40,7 @@ export async function sendEmailJob(params: {
   jobId: string;
   job: EmailJobDoc;
 }) {
-  const creds = await getLiveSesCreds(params.tenantId);
+  const creds = await getSesCreds(params.tenantId);
   const ses = createSesClient(creds);
 
   const from = creds.default_from_email;

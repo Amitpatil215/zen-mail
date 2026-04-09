@@ -3,13 +3,17 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { getActiveTenantId } from "@/lib/tenants/activeTenant";
+import { ExistingSesCreds } from "./ExistingSesCreds";
 
 type Cred = {
   id: string;
   email_domain: string;
   region: string;
-  status: "draft" | "live";
+  status: string;
+  default_from_name: string;
   default_from_email: string;
+  ses_access_key: string;
+  ses_secret_key: string;
 };
 
 async function authedFetch(path: string, init?: RequestInit) {
@@ -83,11 +87,47 @@ export default function SesSettingsPage() {
     }
   }
 
+  function editRow(c: Cred) {
+    setEmailDomain(c.email_domain);
+    setRegion(c.region);
+    setFromName(c.default_from_name);
+    setFromEmail(c.default_from_email);
+    setStatus(c.status === "live" ? "live" : "draft");
+    setAccessKey(c.ses_access_key ?? "");
+    setSecretKey(c.ses_secret_key ?? "");
+    setMsg(null);
+  }
+
+  async function deleteRow(c: Cred) {
+    setError(null);
+    setMsg(null);
+    const ok = window.confirm(`Delete SES credentials for ${c.email_domain}?`);
+    if (!ok) return;
+    try {
+      const res = await authedFetch(
+        `/api/ses-credentials?email_domain=${encodeURIComponent(c.email_domain)}`,
+        { method: "DELETE" }
+      );
+      if (!res.ok) throw new Error(await res.text());
+      setMsg("Deleted.");
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to delete credentials.");
+    }
+  }
+
   async function testConnection() {
     setError(null);
     setMsg(null);
     try {
-      const res = await authedFetch("/api/ses-credentials/test", { method: "POST" });
+      const res = await authedFetch("/api/ses-credentials/test", {
+        method: "POST",
+        body: JSON.stringify({
+          region,
+          ses_access_key: accessKey,
+          ses_secret_key: secretKey,
+        }),
+      });
       if (!res.ok) throw new Error(await res.text());
       const data = (await res.json()) as { ok: boolean; quota?: unknown };
       setMsg(`Test OK: ${data.ok ? "connected" : "unknown"}`);
@@ -99,9 +139,9 @@ export default function SesSettingsPage() {
   return (
     <div className="grid gap-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">SES domains</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">SES Credentials</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Add per-tenant SES credentials (encrypted at rest) and test connection.
+          Add per-tenant SES credentials and test connection.
         </p>
       </div>
 
@@ -122,38 +162,20 @@ export default function SesSettingsPage() {
           <Button variant="outline" onClick={testConnection}>
             Test connection
           </Button>
-          <button
-            className="rounded-xl border border-border px-3 py-1.5 text-sm hover:bg-muted"
-            type="button"
-            onClick={() => setStatus((s) => (s === "draft" ? "live" : "draft"))}
+          <select
+            className="h-10 w-40 rounded-xl border border-border bg-background px-3 text-sm"
+            value={status}
+            onChange={(e) => setStatus(e.target.value === "live" ? "live" : "draft")}
           >
-            Status: {status}
-          </button>
+            <option value="draft">draft</option>
+            <option value="live">live</option>
+          </select>
         </div>
         {msg ? <div className="mt-3 text-sm text-emerald-600">{msg}</div> : null}
         {error ? <div className="mt-3 text-sm text-destructive">{error}</div> : null}
       </div>
 
-      <div className="rounded-2xl border border-border bg-card p-5">
-        <div className="text-sm font-medium">Existing</div>
-        <div className="mt-3 grid gap-2">
-          {creds.length ? (
-            creds.map((c) => (
-              <div key={c.id} className="rounded-xl border border-border bg-background px-4 py-3">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm font-medium">{c.email_domain}</div>
-                  <div className="text-xs text-muted-foreground">{c.status}</div>
-                </div>
-                <div className="mt-1 text-xs text-muted-foreground">
-                  {c.region} • {c.default_from_email}
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="text-sm text-muted-foreground">No credentials yet.</div>
-          )}
-        </div>
-      </div>
+      <ExistingSesCreds creds={creds} onEdit={editRow} onDelete={deleteRow} />
     </div>
   );
 }

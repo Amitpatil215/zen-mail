@@ -2,7 +2,6 @@ import { z } from "zod";
 import { requireIdToken } from "@/lib/api/auth";
 import { requireTenantMembership } from "@/lib/api/tenant";
 import { getServerDb, nowMs } from "@/lib/firestore/server";
-import { encryptString } from "@/lib/crypto/encryption";
 
 export async function GET(request: Request) {
   try {
@@ -26,9 +25,13 @@ export async function GET(request: Request) {
         id: d.id,
         email_domain: typeof data["email_domain"] === "string" ? data["email_domain"] : "",
         region: typeof data["region"] === "string" ? data["region"] : "",
-        status: data["status"] === "live" ? "live" : "draft",
+        status: typeof data["status"] === "string" ? data["status"] : "",
+        default_from_name:
+          typeof data["default_from_name"] === "string" ? data["default_from_name"] : "",
         default_from_email:
           typeof data["default_from_email"] === "string" ? data["default_from_email"] : "",
+        ses_access_key: typeof data["ses_access_key"] === "string" ? data["ses_access_key"] : "",
+        ses_secret_key: typeof data["ses_secret_key"] === "string" ? data["ses_secret_key"] : "",
       };
     });
     return Response.json({ creds });
@@ -72,13 +75,41 @@ export async function POST(request: Request) {
         region: body.region,
         default_from_name: body.default_from_name,
         default_from_email: body.default_from_email,
-        ses_access_key_enc: encryptString(body.ses_access_key),
-        ses_secret_key_enc: encryptString(body.ses_secret_key),
+        // Stored in plaintext (per request).
+        ses_access_key: body.ses_access_key,
+        ses_secret_key: body.ses_secret_key,
         created_at: now,
         updated_at: now,
       },
       { merge: true }
     );
+
+    return Response.json({ ok: true });
+  } catch (e) {
+    return new Response(e instanceof Error ? e.message : "Bad request", {
+      status: 400,
+    });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const user = await requireIdToken(request);
+    const tenantId = request.headers.get("x-tenant-id")?.trim();
+    if (!tenantId) return new Response("Missing x-tenant-id", { status: 400 });
+    await requireTenantMembership(tenantId, user.uid);
+
+    const url = new URL(request.url);
+    const emailDomain = url.searchParams.get("email_domain")?.trim();
+    if (!emailDomain) return new Response("Missing email_domain", { status: 400 });
+
+    const db = getServerDb();
+    await db
+      .collection("tenants")
+      .doc(tenantId)
+      .collection("ses_credentials")
+      .doc(emailDomain)
+      .delete();
 
     return Response.json({ ok: true });
   } catch (e) {

@@ -1,5 +1,10 @@
 import { SESClient } from "@aws-sdk/client-ses";
-import { decryptString } from "@/lib/crypto/encryption";
+
+export type SesCreds = {
+  region: string;
+  ses_access_key: string;
+  ses_secret_key: string;
+};
 
 export type SesCredsDoc = {
   status: "draft" | "live";
@@ -10,13 +15,17 @@ export type SesCredsDoc = {
   default_reply_to_email?: string | null;
   default_cc_email?: string | null;
   default_bcc_email?: string | null;
-  ses_access_key_enc: string;
-  ses_secret_key_enc: string;
+  // Stored in plaintext
+  ses_access_key: string;
+  ses_secret_key: string;
 };
 
-export function createSesClient(creds: SesCredsDoc) {
-  const accessKeyId = decryptString(creds.ses_access_key_enc);
-  const secretAccessKey = decryptString(creds.ses_secret_key_enc);
+export function createSesClient(creds: SesCreds) {
+  const accessKeyId = creds.ses_access_key?.trim();
+  const secretAccessKey = creds.ses_secret_key?.trim();
+  if (!accessKeyId || !secretAccessKey) {
+    throw new Error("Missing SES credentials (access key / secret key).");
+  }
   return new SESClient({
     region: creds.region,
     credentials: { accessKeyId, secretAccessKey },
