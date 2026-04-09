@@ -4,6 +4,7 @@ import { requireTenantMembership } from "@/lib/api/tenant";
 import { getServerDb, nowMs } from "@/lib/firestore/server";
 
 const CreateBody = z.object({
+  name: z.string().trim().min(1).max(120),
   url: z.string().url(),
   file_name: z.string().min(1).max(200),
   folder: z.string().trim().max(120).default(""),
