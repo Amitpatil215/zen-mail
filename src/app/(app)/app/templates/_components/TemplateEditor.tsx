@@ -3,9 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { renderLiquid } from "@/lib/templates/liquid";
-import { findMissingLiquidVariables, listLiquidVariables } from "@/lib/templates/variables";
-import { populateSampleDataJson } from "@/lib/templates/sampleData";
+import { listLiquidVariables } from "@/lib/templates/variables";
 import type { TemplateDoc } from "@/lib/firestore/schema";
+import { TemplateFormPanel } from "./TemplateFormPanel";
+import { VariablesPanel } from "./VariablesPanel";
+import { PreviewPanel } from "./PreviewPanel";
 
 type Draft = Omit<TemplateDoc, "created_at" | "updated_at">;
 
@@ -27,15 +29,22 @@ export function TemplateEditor(props: {
   const [sampleJson, setSampleJson] = useState(JSON.stringify(props.initial.sample_data ?? {}, null, 2));
   const [renderedHtml, setRenderedHtml] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [savedMsg, setSavedMsg] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [autoRender, setAutoRender] = useState(true);
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [previewExpanded, setPreviewExpanded] = useState(false);
   const lastReqId = useRef(0);
 
   const requiredVars = useMemo(() => {
     const joined = `${draft.subject}\n${draft.body_html}\n${draft.body_text ?? ""}`;
     return listLiquidVariables(joined);
   }, [draft.body_html, draft.body_text, draft.subject]);
+
+  const templateJoined = useMemo(
+    () => `${draft.subject}\n${draft.body_html}\n${draft.body_text ?? ""}`,
+    [draft.body_html, draft.body_text, draft.subject]
+  );
 
   const previewDoc = useMemo(() => {
     const html = renderedHtml ?? draft.body_html;
@@ -77,29 +86,9 @@ export function TemplateEditor(props: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoRender, draft.body_html, sampleJson]);
 
-  const missingVars = useMemo(() => {
-    try {
-      const data = JSON.parse(sampleJson || "{}");
-      const joined = `${draft.subject}\n${draft.body_html}\n${draft.body_text ?? ""}`;
-      return findMissingLiquidVariables(joined, data);
-    } catch {
-      return requiredVars;
-    }
-  }, [draft.body_html, draft.body_text, draft.subject, requiredVars, sampleJson]);
-
-  function populateJson() {
-    let existing: unknown = {};
-    try {
-      existing = JSON.parse(sampleJson || "{}");
-    } catch {
-      existing = {};
-    }
-    const out = populateSampleDataJson({ requiredVars, existingData: existing });
-    setSampleJson(JSON.stringify(out, null, 2));
-  }
-
   async function save() {
     setError(null);
+    setSavedMsg(null);
     setSaving(true);
     try {
       const data = parseJsonOrThrow(sampleJson);
@@ -107,8 +96,10 @@ export function TemplateEditor(props: {
         ...draft,
         sample_data: typeof data === "object" && data !== null ? (data as Record<string, unknown>) : {},
       });
+      setSavedMsg("Saved.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to save.");
+    } finally {
       setSaving(false);
     }
   }
@@ -132,133 +123,27 @@ export function TemplateEditor(props: {
         </div>
       </div>
 
+      {savedMsg ? <div className="text-sm text-emerald-600">{savedMsg}</div> : null}
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <div className="grid gap-3">
-            <div>
-              <div className="text-xs font-medium text-muted-foreground">Name</div>
-              <input
-                className="mt-1 h-10 w-full rounded-xl border border-border bg-background px-3 text-sm"
-                value={draft.name}
-                onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
-              />
-            </div>
+        <TemplateFormPanel draft={draft} onChange={setDraft} />
 
-            <div>
-              <div className="text-xs font-medium text-muted-foreground">Subject</div>
-              <input
-                className="mt-1 h-10 w-full rounded-xl border border-border bg-background px-3 font-mono text-xs"
-                value={draft.subject}
-                onChange={(e) => setDraft((d) => ({ ...d, subject: e.target.value }))}
-              />
-            </div>
-
-            <div>
-              <div className="text-xs font-medium text-muted-foreground">HTML</div>
-              <textarea
-                className="mt-1 h-[320px] w-full rounded-xl border border-border bg-background p-3 font-mono text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
-                value={draft.body_html}
-                onChange={(e) => setDraft((d) => ({ ...d, body_html: e.target.value }))}
-              />
-            </div>
-
-            <div>
-              <div className="text-xs font-medium text-muted-foreground">Text (optional)</div>
-              <textarea
-                className="mt-1 h-28 w-full rounded-xl border border-border bg-background p-3 font-mono text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
-                value={draft.body_text ?? ""}
-                onChange={(e) => setDraft((d) => ({ ...d, body_text: e.target.value }))}
-              />
-            </div>
-
-            <div>
-              <div className="text-xs font-medium text-muted-foreground">Labels (comma separated)</div>
-              <input
-                className="mt-1 h-10 w-full rounded-xl border border-border bg-background px-3 text-sm"
-                value={draft.labels.join(", ")}
-                onChange={(e) =>
-                  setDraft((d) => ({
-                    ...d,
-                    labels: e.target.value
-                      .split(",")
-                      .map((s) => s.trim())
-                      .filter(Boolean),
-                  }))
-                }
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <div className="flex items-center justify-between">
-            <div className="text-sm font-medium">Preview</div>
-            <div className="flex items-center gap-2">
-              <button
-                className="rounded-xl border border-border px-3 py-1.5 text-xs hover:bg-muted"
-                onClick={() => setTheme("light")}
-                type="button"
-              >
-                Light
-              </button>
-              <button
-                className="rounded-xl border border-border px-3 py-1.5 text-xs hover:bg-muted"
-                onClick={() => setTheme("dark")}
-                type="button"
-              >
-                Dark
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-3 grid gap-2">
-            <div className="flex items-center gap-2">
-              <Button onClick={() => void doRender(false)} type="button">
-                Render now
-              </Button>
-              <Button onClick={populateJson} type="button" variant="secondary">
-                Populate JSON
-              </Button>
-              <label className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
-                <input
-                  type="checkbox"
-                  checked={autoRender}
-                  onChange={(e) => setAutoRender(e.target.checked)}
-                />
-                Auto-render
-              </label>
-            </div>
-            <div className="text-xs font-medium text-muted-foreground">Sample data (JSON)</div>
-            <textarea
-              className="h-44 w-full rounded-xl border border-border bg-background p-3 font-mono text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
-              value={sampleJson}
-              onChange={(e) => setSampleJson(e.target.value)}
-            />
-            {error ? <div className="text-sm text-destructive">{error}</div> : null}
-
-            {requiredVars.length ? (
-              <div className="rounded-xl border border-border bg-background p-3">
-                <div className="text-xs font-medium text-muted-foreground">Required variables</div>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {requiredVars.map((v) => (
-                    <span key={v} className="rounded-lg border border-border px-2 py-0.5 text-[11px]">
-                      {v}
-                    </span>
-                  ))}
-                </div>
-                {missingVars.length ? (
-                  <div className="mt-2 text-xs text-destructive">Missing: {missingVars.join(", ")}</div>
-                ) : (
-                  <div className="mt-2 text-xs text-emerald-600">All present.</div>
-                )}
-              </div>
-            ) : null}
-          </div>
-
-          <iframe
-            className="mt-3 h-[420px] w-full rounded-xl border border-border bg-background"
-            srcDoc={previewDoc}
-            title="Template preview"
+        <div className="grid gap-4">
+          <PreviewPanel
+            previewDoc={previewDoc}
+            theme={theme}
+            onChangeTheme={setTheme}
+            expanded={previewExpanded}
+            onChangeExpanded={setPreviewExpanded}
+          />
+          <VariablesPanel
+            requiredVars={requiredVars}
+            templateJoined={templateJoined}
+            sampleJson={sampleJson}
+            onChangeSampleJson={setSampleJson}
+            autoRender={autoRender}
+            onChangeAutoRender={setAutoRender}
+            onRenderNow={() => void doRender(false)}
+            renderError={error}
           />
         </div>
       </div>

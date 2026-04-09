@@ -102,7 +102,7 @@ export default function TemplatesPage() {
       {error ? <div className="text-sm text-destructive">{error}</div> : null}
 
       <div className="rounded-2xl border border-border bg-card">
-        <div className="grid grid-cols-12 gap-2 border-b border-border px-5 py-3 text-xs font-medium text-muted-foreground">
+        <div className="hidden grid-cols-12 gap-2 border-b border-border px-5 py-3 text-xs font-medium text-muted-foreground md:grid">
           <div className="col-span-5">Name</div>
           <div className="col-span-4">Labels</div>
           <div className="col-span-2">Updated</div>
@@ -111,12 +111,18 @@ export default function TemplatesPage() {
 
         <div className="divide-y divide-border">
           {items.map((t) => (
-            <div key={t.id} className="grid grid-cols-12 gap-2 px-5 py-3">
-              <div className="col-span-5">
+            <div
+              key={t.id}
+              className="flex flex-col gap-2 px-5 py-4 md:grid md:grid-cols-12 md:items-center md:gap-2 md:py-3"
+            >
+              <div className="md:col-span-5">
                 <div className="text-sm font-medium">{t.name}</div>
                 <div className="mt-0.5 text-xs text-muted-foreground line-clamp-1">{t.subject}</div>
               </div>
-              <div className="col-span-4 flex flex-wrap gap-1.5">
+
+              <div className="md:col-span-4">
+                <div className="text-[11px] font-medium text-muted-foreground md:hidden">Labels</div>
+                <div className="mt-1 flex flex-wrap gap-1.5 md:mt-0">
                 {(t.labels ?? []).length ? (
                   t.labels.map((l) => (
                     <span key={l} className="rounded-lg border border-border px-2 py-0.5 text-[11px]">
@@ -126,9 +132,14 @@ export default function TemplatesPage() {
                 ) : (
                   <span className="text-xs text-muted-foreground">—</span>
                 )}
+                </div>
               </div>
-              <div className="col-span-2 text-xs text-muted-foreground">{formatTs(t.updated_at)}</div>
-              <div className="col-span-1 flex justify-end gap-2">
+
+              <div className="flex items-center justify-between gap-3 md:col-span-3 md:justify-end">
+                <div className="text-xs text-muted-foreground md:col-span-2 md:text-right">
+                  <span className="font-medium text-muted-foreground md:hidden">Updated: </span>
+                  {formatTs(t.updated_at)}
+                </div>
                 <Link className="text-xs hover:underline" href={`/app/templates/${t.id}`}>
                   Edit
                 </Link>
