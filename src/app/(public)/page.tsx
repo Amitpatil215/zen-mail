@@ -81,17 +81,6 @@ export default function LandingPage() {
               <Link href="#how-it-works">How it works</Link>
             </Button>
           </div>
-          <ul className="mt-2 grid gap-2 text-sm text-muted-foreground sm:grid-cols-3">
-            <li className="rounded-xl border border-border bg-card/50 p-4">
-              Very simple to use (tech & non-tech).
-            </li>
-            <li className="rounded-xl border border-border bg-card/50 p-4">
-              Minimum markup from base email provider like SES.
-            </li>
-            <li className="rounded-xl border border-border bg-card/50 p-4">
-              Sending and monitoring in one platform.
-            </li>
-          </ul>
         </section>
 
         <section id="how-it-works" className="grid gap-4">
