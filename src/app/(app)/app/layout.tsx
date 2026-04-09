@@ -4,16 +4,17 @@ import { AuthGate } from "@/components/auth/AuthGate";
 import { TenantGate } from "@/components/tenants/TenantGate";
 import { AuthButton } from "@/components/auth/AuthButton";
 
-const navItems: Array<{ href: string; label: string }> = [
+const navItems: Array<{ href: string; label: string; comingSoon?: boolean }> = [
   { href: "/app", label: "Overview" },
-  { href: "/app/people", label: "People" },
   { href: "/app/templates", label: "Templates" },
-  { href: "/app/campaigns", label: "Campaigns" },
   { href: "/app/jobs", label: "Jobs" },
   { href: "/app/assets", label: "Assets" },
   { href: "/app/settings/tenants", label: "Settings" },
   { href: "/app/settings/domains-ses", label: "SES" },
   { href: "/app/settings/api-keys", label: "API Keys" },
+  // Keep WIP sections at bottom.
+  { href: "/app/people", label: "People", comingSoon: true },
+  { href: "/app/campaigns", label: "Campaigns", comingSoon: true },
 ];
 
 function Sidebar() {
@@ -33,9 +34,14 @@ function Sidebar() {
           <Link
             key={item.href}
             href={item.href}
-            className="rounded-xl px-3 py-2 text-sm font-medium text-foreground/90 hover:bg-muted"
+            className="relative rounded-xl px-3 py-2 text-sm font-medium text-foreground/90 hover:bg-muted"
           >
             {item.label}
+            {item.comingSoon ? (
+              <span className="absolute right-2 top-1 rounded-full border border-border bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase leading-none text-muted-foreground">
+                Coming soon
+              </span>
+            ) : null}
           </Link>
         ))}
       </nav>

@@ -84,6 +84,14 @@ export default function PeoplePage() {
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="text-sm font-medium">Coming soon</div>
+        <div className="mt-2 text-sm text-muted-foreground">
+          Segments, bulk import/export, advanced tagging, and custom fields are
+          coming soon.
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-5">
         <div className="text-sm font-medium">Add contact</div>
         <div className="mt-3 grid gap-3 md:grid-cols-4">
           <input
