@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { getActiveTenantId } from "@/lib/tenants/activeTenant";
 import { deleteTemplate, listTemplatesPage, type TemplateRow } from "@/lib/templates/firestore";
 import { ConfirmDialog } from "./_components/ConfirmDialog";
+import type { DocumentData, QueryDocumentSnapshot } from "firebase/firestore";
 
 const PAGE_SIZE = 10;
 
@@ -24,7 +25,7 @@ export default function TemplatesPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(0);
-  const [cursors, setCursors] = useState<(unknown | null)[]>([null]);
+  const [cursors, setCursors] = useState<(QueryDocumentSnapshot<DocumentData> | null)[]>([null]);
   const [confirm, setConfirm] = useState<{ id: string; name: string } | null>(null);
 
   async function loadPage(targetPage: number) {
@@ -36,7 +37,7 @@ export default function TemplatesPage() {
     }
     setLoading(true);
     try {
-      const after = (cursors[targetPage] ?? null) as any;
+      const after = cursors[targetPage] ?? null;
       const res = await listTemplatesPage({ tenantId, pageSize: PAGE_SIZE, after });
       setItems(res.items);
       setPage(targetPage);

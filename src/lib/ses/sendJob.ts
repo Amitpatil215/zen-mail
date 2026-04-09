@@ -5,11 +5,25 @@ import { renderLiquid } from "@/lib/templates/liquid";
 import { createSesClient, type SesCredsDoc } from "@/lib/ses/client";
 import { signParams } from "@/lib/crypto/signing";
 
-async function getSesCreds(tenantId: string): Promise<SesCredsDoc> {
+async function getSesCreds(params: {
+  tenantId: string;
+  sesCredentialId?: string | null;
+}): Promise<SesCredsDoc> {
   const db = getServerDb();
+  if (params.sesCredentialId) {
+    const snap = await db
+      .collection("tenants")
+      .doc(params.tenantId)
+      .collection("ses_credentials")
+      .doc(params.sesCredentialId)
+      .get();
+    if (!snap.exists) throw new Error("Selected SES credentials not found.");
+    return snap.data() as SesCredsDoc;
+  }
+
   const snaps = await db
     .collection("tenants")
-    .doc(tenantId)
+    .doc(params.tenantId)
     .collection("ses_credentials")
     .orderBy("updated_at", "desc")
     .limit(1)
@@ -40,10 +54,13 @@ export async function sendEmailJob(params: {
   jobId: string;
   job: EmailJobDoc;
 }) {
-  const creds = await getSesCreds(params.tenantId);
+  const creds = await getSesCreds({
+    tenantId: params.tenantId,
+    sesCredentialId: params.job.ses_credential_id ?? null,
+  });
   const ses = createSesClient(creds);
 
-  const from = creds.default_from_email;
+  const from = params.job.from_email ?? creds.default_from_email;
   if (!from) throw new Error("default_from_email not configured.");
 
   let subject = params.job.subject;

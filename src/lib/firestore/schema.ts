@@ -42,6 +42,9 @@ export type EmailJobType = "template" | "raw_html" | "raw_text";
 export type EmailJobDoc = {
   type: EmailJobType;
   template_id?: string | null;
+  ses_credential_id?: string | null;
+  from_email?: string | null;
+  from_name?: string | null;
   to: string[];
   cc: string[];
   bcc: string[];

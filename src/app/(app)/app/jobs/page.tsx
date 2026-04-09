@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { getActiveTenantId } from "@/lib/tenants/activeTenant";
+import { CreateJobDialog } from "./CreateJobDialog";
 
 type Job = {
   id: string;
@@ -34,6 +35,7 @@ async function authedFetch(path: string, init?: RequestInit) {
 export default function JobsPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
 
   async function load() {
     setError(null);
@@ -51,31 +53,15 @@ export default function JobsPage() {
     load();
   }, []);
 
-  async function createTestJob() {
-    setError(null);
-    try {
-      const res = await authedFetch("/api/email-jobs", {
-        method: "POST",
-        body: JSON.stringify({
-          type: "raw_text",
-          to: ["test@example.com"],
-          cc: [],
-          bcc: [],
-          subject: "Zen Mail test",
-          raw_text: "Hello from Zen Mail.",
-          variables: {},
-          idempotency_key: `test_${Date.now()}`,
-        }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      await load();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to create job.");
-    }
-  }
-
   return (
     <div className="grid gap-6">
+      <CreateJobDialog
+        open={creating}
+        onClose={() => setCreating(false)}
+        onCreated={() => {
+          void load();
+        }}
+      />
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Jobs</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -86,8 +72,8 @@ export default function JobsPage() {
       <div className="rounded-2xl border border-border bg-card p-5">
         <div className="flex items-center justify-between">
           <div className="text-sm font-medium">Email jobs</div>
-          <Button variant="outline" onClick={createTestJob} type="button">
-            Create test job
+          <Button variant="outline" onClick={() => setCreating(true)} type="button">
+            Create job
           </Button>
         </div>
         {error ? <div className="mt-2 text-sm text-destructive">{error}</div> : null}

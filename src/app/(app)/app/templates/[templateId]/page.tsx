@@ -32,8 +32,8 @@ export default function EditTemplatePage() {
           setError("Template not found.");
           return;
         }
-        const { created_at: _c, updated_at: _u, ...rest } = t as any;
-        setInitial(rest as Draft);
+        const { id: _id, created_at: _c, updated_at: _u, ...rest } = t;
+        setInitial(rest);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to load template.");
       }
