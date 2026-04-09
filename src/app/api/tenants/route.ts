@@ -2,6 +2,7 @@ import { z } from "zod";
 import { requireIdToken } from "@/lib/api/auth";
 import { getServerDb, nowMs } from "@/lib/firestore/server";
 import type { TenantDoc, UserTenantDoc } from "@/lib/firestore/schema";
+import { defaultTenantTemplates } from "@/lib/templates/defaultTenantTemplates";
 
 export async function GET(request: Request) {
   try {
@@ -75,6 +76,12 @@ export async function POST(request: Request) {
         email: user.email ?? null,
         updated_at: now,
       }, { merge: true });
+
+      const seed = defaultTenantTemplates();
+      for (const t of seed) {
+        const ref = tenantRef.collection("templates").doc();
+        tx.set(ref, { ...t, created_at: now, updated_at: now });
+      }
     });
 
     return Response.json({ tenant: { id: tenantRef.id, name: tenantDoc.name } });
