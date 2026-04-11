@@ -20,7 +20,7 @@ export default function AssetsPage() {
     try {
       const res = await authedTenantFetch("/api/assets");
       if (!res.ok) throw new Error(await res.text());
-      const data = (await res.json()) as { assets: Asset[] };
+      const data = (await res.json()) as { assets: AssetRow[] };
       setAssets(data.assets);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load assets.");
