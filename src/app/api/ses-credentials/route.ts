@@ -2,6 +2,7 @@ import { z } from "zod";
 import { requireIdToken } from "@/lib/api/auth";
 import { requireTenantMembership } from "@/lib/api/tenant";
 import { getServerDb, nowMs } from "@/lib/firestore/server";
+import { decryptSesKeyField, encryptSesKeyField } from "@/lib/ses/sesKeyStorage";
 
 export async function GET(request: Request) {
   try {
@@ -30,8 +31,14 @@ export async function GET(request: Request) {
           typeof data["default_from_name"] === "string" ? data["default_from_name"] : "",
         default_from_email:
           typeof data["default_from_email"] === "string" ? data["default_from_email"] : "",
-        ses_access_key: typeof data["ses_access_key"] === "string" ? data["ses_access_key"] : "",
-        ses_secret_key: typeof data["ses_secret_key"] === "string" ? data["ses_secret_key"] : "",
+        ses_access_key:
+          typeof data["ses_access_key"] === "string"
+            ? decryptSesKeyField(data["ses_access_key"])
+            : "",
+        ses_secret_key:
+          typeof data["ses_secret_key"] === "string"
+            ? decryptSesKeyField(data["ses_secret_key"])
+            : "",
       };
     });
     return Response.json({ creds });
@@ -75,9 +82,8 @@ export async function POST(request: Request) {
         region: body.region,
         default_from_name: body.default_from_name,
         default_from_email: body.default_from_email,
-        // Stored in plaintext (per request).
-        ses_access_key: body.ses_access_key,
-        ses_secret_key: body.ses_secret_key,
+        ses_access_key: encryptSesKeyField(body.ses_access_key),
+        ses_secret_key: encryptSesKeyField(body.ses_secret_key),
         created_at: now,
         updated_at: now,
       },

@@ -15,7 +15,7 @@ export type SesCredsDoc = {
   default_reply_to_email?: string | null;
   default_cc_email?: string | null;
   default_bcc_email?: string | null;
-  // Stored in plaintext
+  /** Encrypted at rest in Firestore (see sesKeyStorage). */
   ses_access_key: string;
   ses_secret_key: string;
 };

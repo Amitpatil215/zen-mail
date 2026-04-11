@@ -3,6 +3,7 @@ import { getServerDb } from "@/lib/firestore/server";
 import type { EmailJobDoc, TemplateDoc } from "@/lib/firestore/schema";
 import { renderLiquid } from "@/lib/templates/liquid";
 import { createSesClient, type SesCredsDoc } from "@/lib/ses/client";
+import { decryptSesKeyFields } from "@/lib/ses/sesKeyStorage";
 import { signParams } from "@/lib/crypto/signing";
 
 async function getSesCreds(params: {
@@ -18,7 +19,7 @@ async function getSesCreds(params: {
       .doc(params.sesCredentialId)
       .get();
     if (!snap.exists) throw new Error("Selected SES credentials not found.");
-    return snap.data() as SesCredsDoc;
+    return decryptSesKeyFields(snap.data() as SesCredsDoc);
   }
 
   const snaps = await db
@@ -30,7 +31,7 @@ async function getSesCreds(params: {
     .get();
   const doc = snaps.docs[0];
   if (!doc) throw new Error("No SES credentials configured.");
-  return doc.data() as SesCredsDoc;
+  return decryptSesKeyFields(doc.data() as SesCredsDoc);
 }
 
 async function renderTemplate(tenantId: string, templateId: string, vars: unknown) {
