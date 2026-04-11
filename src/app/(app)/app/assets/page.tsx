@@ -1,49 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { getActiveTenantId } from "@/lib/tenants/activeTenant";
-
-type Asset = {
-  id: string;
-  name: string;
-  url: string;
-  file_name: string;
-  folder: string;
-  content_type: string;
-  size: number;
-  created_at: number;
-};
-
-async function authedFetch(path: string, init?: RequestInit) {
-  const tenantId = getActiveTenantId();
-  if (!tenantId) throw new Error("No active tenant selected.");
-  const { getClientAuth } = await import("@/lib/firebase/client");
-  const token = await getClientAuth().currentUser?.getIdToken();
-  if (!token) throw new Error("Not signed in.");
-
-  return fetch(path, {
-    ...init,
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${token}`,
-      "x-tenant-id": tenantId,
-      ...(init?.headers ?? {}),
-    },
-  });
-}
+import { AssetListItem, type AssetRow } from "./AssetListItem";
+import { authedTenantFetch } from "./tenantFetch";
 
 export default function AssetsPage() {
   const [folder, setFolder] = useState("email");
   const [name, setName] = useState("");
-  const [assets, setAssets] = useState<Asset[]>([]);
+  const [assets, setAssets] = useState<AssetRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function load() {
     setError(null);
     try {
-      const res = await authedFetch("/api/assets");
+      const res = await authedTenantFetch("/api/assets");
       if (!res.ok) throw new Error(await res.text());
       const data = (await res.json()) as { assets: Asset[] };
       setAssets(data.assets);
@@ -71,7 +46,7 @@ export default function AssetsPage() {
       await uploadBytes(storageRef, file, { contentType: file.type || "application/octet-stream" });
       const url = await getDownloadURL(storageRef);
 
-      const res = await authedFetch("/api/assets", {
+      const res = await authedTenantFetch("/api/assets", {
         method: "POST",
         body: JSON.stringify({
           name: assetName,
@@ -84,6 +59,8 @@ export default function AssetsPage() {
       });
       if (!res.ok) throw new Error(await res.text());
       setName("");
+      setSelectedFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Upload failed.");
@@ -125,15 +102,36 @@ export default function AssetsPage() {
           <label className="grid gap-2">
             <span className="text-sm text-muted-foreground">File</span>
             <input
+              ref={fileInputRef}
               className="h-10 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
               type="file"
               disabled={busy}
               onChange={(e) => {
                 const f = e.target.files?.[0];
-                if (f) void upload(f);
+                setSelectedFile(f ?? null);
               }}
             />
           </label>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="text-sm text-muted-foreground">
+            {selectedFile ? (
+              <>
+                Selected: <span className="font-mono text-foreground">{selectedFile.name}</span>
+              </>
+            ) : (
+              "Choose a file, then click Upload."
+            )}
+          </div>
+          <Button
+            type="button"
+            disabled={busy || !selectedFile}
+            onClick={() => {
+              if (selectedFile) void upload(selectedFile);
+            }}
+          >
+            {busy ? "Uploading…" : "Upload"}
+          </Button>
         </div>
         {error ? <div className="mt-3 text-sm text-destructive">{error}</div> : null}
       </div>
@@ -143,45 +141,12 @@ export default function AssetsPage() {
         <div className="mt-3 grid gap-2">
           {assets.length ? (
             assets.map((a) => (
-              <div
+              <AssetListItem
                 key={a.id}
-                className="flex items-center justify-between gap-4 rounded-xl border border-border bg-background px-4 py-3"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium">{a.name}</div>
-                  <div className="mt-0.5 truncate text-xs text-muted-foreground">
-                    <span className="font-mono">{a.file_name}</span>
-                    {" • "}
-                    {a.folder ? `${a.folder} • ` : ""}
-                    {new Date(a.created_at).toLocaleString()}
-                  </div>
-                  {a.content_type?.startsWith("image/") ? (
-                    <div className="mt-2">
-                      <img
-                        src={a.url}
-                        alt={a.name || a.file_name}
-                        className="h-16 w-16 rounded-lg border border-border object-cover"
-                        loading="lazy"
-                        referrerPolicy="no-referrer"
-                      />
-                    </div>
-                  ) : null}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => window.open(a.url, "_blank", "noopener,noreferrer")}
-                  >
-                    Open
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => navigator.clipboard.writeText(a.url)}
-                  >
-                    Copy URL
-                  </Button>
-                </div>
-              </div>
+                asset={a}
+                onDeleted={load}
+                onError={(message) => setError(message)}
+              />
             ))
           ) : (
             <div className="text-sm text-muted-foreground">No assets yet.</div>

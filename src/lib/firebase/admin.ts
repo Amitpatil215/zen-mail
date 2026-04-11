@@ -1,6 +1,7 @@
 import { getApps, initializeApp, cert, type App } from "firebase-admin/app";
 import { getAuth, type Auth } from "firebase-admin/auth";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 
 type AdminFirebase = {
   app: App;
@@ -52,5 +53,13 @@ export function getAdminAuth() {
 
 export function getAdminDb() {
   return getAdminFirebase().db;
+}
+
+export function getAdminStorageBucket() {
+  const { app } = getAdminFirebase();
+  const projectId = required("FIREBASE_PROJECT_ID", process.env.FIREBASE_PROJECT_ID);
+  const bucketName =
+    process.env.FIREBASE_STORAGE_BUCKET?.trim() || `${projectId}.appspot.com`;
+  return getStorage(app).bucket(bucketName);
 }
 
