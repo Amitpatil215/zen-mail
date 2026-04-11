@@ -5,16 +5,21 @@ service firebase.storage {
       return request.auth != null;
     }
 
+    // Writes use path tenantId: only members of that tenant may create/update/delete.
     function isTenantMember(tenantId) {
-      // Mirror of Firestore membership doc.
       return isSignedIn()
-        && exists(/databases/(default)/documents/tenants/$(tenantId)/members/$(request.auth.uid));
+        && firestore.exists(
+          /databases/(default)/documents/tenants/$(tenantId)/members/$(request.auth.uid)
+        );
     }
 
-    // Tenant-scoped uploads. You can later expand to make some folders public.
     match /tenants/{tenantId}/{allPaths=**} {
-      allow read, write: if isTenantMember(tenantId);
+      // Public download by URL (read does NOT cover list — see below).
+      allow get: if true;
+      // Only members can enumerate objects under this tenant prefix.
+      allow list: if isTenantMember(tenantId);
+      // create, update, delete — never another tenant's prefix.
+      allow write: if isTenantMember(tenantId);
     }
   }
 }
-

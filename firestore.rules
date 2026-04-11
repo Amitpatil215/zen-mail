@@ -5,6 +5,9 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Membership is proven by a doc at tenants/{tenantId}/members/{uid}.
+    // Every tenant-scoped rule uses tenantId from the resource path so
+    // tenants/A/... is never accessible using membership in tenants/B alone.
     function isTenantMember(tenantId) {
       return isSignedIn()
         && exists(/databases/$(database)/documents/tenants/$(tenantId)/members/$(request.auth.uid));
@@ -15,17 +18,18 @@ service cloud.firestore {
     }
 
     match /tenants/{tenantId} {
-      allow read, update: if isTenantMember(tenantId);
-      allow create: if isSignedIn();
-      allow delete: if false;
+      // Root tenant document: created/updated via Admin (API) only.
+      allow read, write: if false;
 
+      // Own membership row only (no listing other members from the client SDK).
       match /members/{memberId} {
-        allow read: if isTenantMember(tenantId);
+        allow read: if isTenantMember(tenantId) && memberId == request.auth.uid;
         allow write: if false;
       }
 
-      match /{document=**} {
-        allow read, write: if isTenantMember(tenantId);
+      // Only tenant subcollection used from the web SDK; all others are API/Admin-only.
+      match /templates/{templateId} {
+        allow read, create, update, delete: if isTenantMember(tenantId);
       }
     }
 
@@ -35,4 +39,3 @@ service cloud.firestore {
     }
   }
 }
-
