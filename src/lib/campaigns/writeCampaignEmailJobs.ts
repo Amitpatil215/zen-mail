@@ -37,6 +37,7 @@ export async function writeCampaignEmailJobs(params: {
       const variables = mergePersonVariables(params.baseVariables, r);
       const job: EmailJobDoc = {
         type: "template",
+        person_id: r.id,
         campaign_id: params.campaignId,
         template_id: params.templateId,
         ses_credential_id: params.sesCredentialId,

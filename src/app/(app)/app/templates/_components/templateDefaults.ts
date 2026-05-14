@@ -8,7 +8,17 @@ export function defaultTemplateDraft(): Omit<TemplateDoc, "created_at" | "update
       "<!-- HTML template -->\n<h1>Hello {{ person.first_name }}</h1>\n<p>Welcome to Zen Mail.</p>\n",
     body_text: "Hello {{ person.first_name }}\nWelcome to Zen Mail.\n",
     labels: [],
-    sample_data: { person: { first_name: "Taylor" } },
+    sample_data: {
+      person: { first_name: "Taylor", last_name: "Lee", email: "taylor@example.com" },
+      system: {
+        unsubscribe: "https://example.com/u/unsub",
+        people: {
+          first_name: "Taylor",
+          last_name: "Lee",
+          email: "taylor@example.com",
+        },
+      },
+    },
   };
 }
 

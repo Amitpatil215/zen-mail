@@ -1,7 +1,9 @@
 import { SendEmailCommand } from "@aws-sdk/client-ses";
 import { getServerDb } from "@/lib/firestore/server";
 import type { EmailJobDoc } from "@/lib/firestore/schema";
+import { enrichEmailJobVariables } from "@/lib/email/enrichEmailJobVariables";
 import { renderStoredTemplate } from "@/lib/templates/renderStoredTemplate";
+import { renderLiquid } from "@/lib/templates/liquid";
 import { createSesClient, type SesCredsDoc } from "@/lib/ses/client";
 import { decryptSesKeyFields } from "@/lib/ses/sesKeyStorage";
 import { signParams } from "@/lib/crypto/signing";
@@ -48,6 +50,12 @@ export async function sendEmailJob(params: {
   const from = params.job.from_email ?? creds.default_from_email;
   if (!from) throw new Error("default_from_email not configured.");
 
+  const renderVars = await enrichEmailJobVariables({
+    tenantId: params.tenantId,
+    job: params.job,
+    fromEmail: from,
+  });
+
   let subject = params.job.subject;
   let htmlBody: string | null = params.job.raw_html ?? null;
   let textBody: string | null = params.job.raw_text ?? null;
@@ -55,10 +63,16 @@ export async function sendEmailJob(params: {
   if (params.job.type === "template") {
     const templateId = params.job.template_id;
     if (!templateId) throw new Error("Missing template_id.");
-    const rendered = await renderStoredTemplate(params.tenantId, templateId, params.job.variables);
+    const rendered = await renderStoredTemplate(params.tenantId, templateId, renderVars);
     subject = rendered.subject;
     htmlBody = rendered.html;
     textBody = rendered.text;
+  } else if (params.job.type === "raw_html") {
+    subject = await renderLiquid(params.job.subject, renderVars);
+    if (htmlBody) htmlBody = await renderLiquid(htmlBody, renderVars);
+  } else if (params.job.type === "raw_text") {
+    subject = await renderLiquid(params.job.subject, renderVars);
+    if (textBody) textBody = await renderLiquid(textBody, renderVars);
   }
 
   if (!htmlBody && !textBody) throw new Error("Email must have html or text.");

@@ -14,4 +14,5 @@ export type Person = {
   tags?: string[];
   group_ids?: string[];
   unsubscribed_at?: number | null;
+  unsubscribed_from?: Record<string, number>;
 };

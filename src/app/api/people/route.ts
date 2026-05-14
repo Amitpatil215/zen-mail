@@ -135,6 +135,7 @@ export async function POST(request: Request) {
           group_ids: groupIds,
           custom: {},
           unsubscribed_at: null,
+          unsubscribed_from: {},
           created_at: now,
           updated_at: now,
         });
@@ -158,6 +159,7 @@ export async function POST(request: Request) {
       group_ids: groupIds,
       custom: {},
       unsubscribed_at: null,
+      unsubscribed_from: {},
       created_at: now,
       updated_at: now,
     });

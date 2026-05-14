@@ -19,6 +19,7 @@ const Body = z.object({
   idempotency_key: z.string().trim().min(8).max(200),
   max_retries: z.number().int().min(0).max(10).optional().default(3),
   track_email_open: z.boolean().optional().default(false),
+  person_id: z.string().trim().min(1).max(200).optional(),
 });
 
 export async function POST(request: Request) {
@@ -53,6 +54,7 @@ export async function POST(request: Request) {
 
     const job: EmailJobDoc = {
       type: body.type,
+      person_id: body.person_id ?? null,
       campaign_id: null,
       template_id: body.type === "template" ? body.template_id ?? null : null,
       to: body.to,

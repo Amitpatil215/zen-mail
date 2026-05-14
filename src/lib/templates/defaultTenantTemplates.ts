@@ -17,6 +17,14 @@ function baseSampleData() {
       preferences_url: "https://example.com/preferences",
       unsubscribe_url: "https://example.com/unsub",
     },
+    system: {
+      unsubscribe: "https://example.com/u/unsub",
+      people: {
+        first_name: "Avery",
+        last_name: "Chen",
+        email: "avery@example.com",
+      },
+    },
   } satisfies Record<string, unknown>;
 }
 
@@ -61,7 +69,7 @@ function htmlShell(params: { title: string; preheader: string; content: string; 
                       <p style="margin:10px 0 0 0;font-size:12px;line-height:18px;color:#6B7280">
                         <a href="${"{{ links.preferences_url }}"}" style="color:#6D28D9;text-decoration:none">Preferences</a>
                         ·
-                        <a href="${"{{ links.unsubscribe_url }}"}" style="color:#6D28D9;text-decoration:none">Unsubscribe</a>
+                        <a href="${"{{ system.unsubscribe | default: links.unsubscribe_url }}"}" style="color:#6D28D9;text-decoration:none">Unsubscribe</a>
                       </p>
                     </td>
                   </tr>

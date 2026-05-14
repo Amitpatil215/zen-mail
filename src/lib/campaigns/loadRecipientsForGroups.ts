@@ -5,16 +5,23 @@ import type { CampaignRecipient } from "./mergePersonVariables";
 
 const PAGE = 500;
 
+function normalizeFromEmail(from: string | null | undefined) {
+  return (from ?? "").toLowerCase().trim();
+}
+
 export async function loadRecipientsForGroups(params: {
   db: Firestore;
   tenantId: string;
   groupIds: string[];
+  /** When set, people who unsubscribed from this From address are excluded. */
+  fromEmail?: string | null;
 }): Promise<CampaignRecipient[]> {
   const uniqueGroups = [...new Set(params.groupIds.filter(Boolean))];
   if (!uniqueGroups.length) return [];
 
   const base = params.db.collection("tenants").doc(params.tenantId).collection("people");
   const byEmail = new Map<string, CampaignRecipient>();
+  const fromKey = normalizeFromEmail(params.fromEmail);
 
   let cursor: { created_at: number; id: string } | null = null;
   for (;;) {
@@ -32,6 +39,7 @@ export async function loadRecipientsForGroups(params: {
     for (const doc of snap.docs) {
       const d = doc.data() as PersonDoc;
       if (d.unsubscribed_at) continue;
+      if (fromKey && d.unsubscribed_from?.[fromKey]) continue;
       const email = (d.email || "").toLowerCase().trim();
       if (!email) continue;
       if (byEmail.has(email)) continue;

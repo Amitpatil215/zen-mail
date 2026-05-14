@@ -8,6 +8,7 @@ import { loadRecipientsForGroups } from "@/lib/campaigns/loadRecipientsForGroups
 import { mergePersonVariables } from "@/lib/campaigns/mergePersonVariables";
 import { getServerDb } from "@/lib/firestore/server";
 import type { TemplateDoc } from "@/lib/firestore/schema";
+import { mergePreviewSystemVariables } from "@/lib/email/enrichEmailJobVariables";
 import { renderStoredTemplate } from "@/lib/templates/renderStoredTemplate";
 
 export async function POST(request: Request) {
@@ -36,6 +37,7 @@ export async function POST(request: Request) {
       db,
       tenantId,
       groupIds: body.group_ids,
+      fromEmail: body.from_email,
     });
 
     if (recipients.length > MAX_CAMPAIGN_RECIPIENTS) {
@@ -54,7 +56,12 @@ export async function POST(request: Request) {
 
     let rendered_html: string | null = null;
     if (recipients[0]) {
-      const vars = mergePersonVariables(body.variables, recipients[0]);
+      const vars = mergePreviewSystemVariables({
+        tenantId,
+        fromEmail: body.from_email ?? null,
+        recipient: recipients[0],
+        variables: mergePersonVariables(body.variables, recipients[0]),
+      });
       const rendered = await renderStoredTemplate(tenantId, body.template_id, vars);
       rendered_html = rendered.html;
     }

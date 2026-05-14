@@ -53,6 +53,7 @@ export async function POST(request: Request, ctx: RouteCtx) {
       db,
       tenantId,
       groupIds: campaign.group_ids,
+      fromEmail: campaign.from_email,
     });
 
     if (recipients.length > MAX_CAMPAIGN_RECIPIENTS) {

@@ -6,6 +6,7 @@ import type { EmailJobDoc, EmailJobType } from "@/lib/firestore/schema";
 import { sha256Hex } from "@/lib/crypto/hash";
 
 const Body = z.object({
+  person_id: z.string().trim().min(1).max(200).optional(),
   type: z.enum(["template", "raw_html", "raw_text"] satisfies [EmailJobType, ...EmailJobType[]]),
   template_id: z.string().trim().min(1).optional(),
   ses_credential_id: z.string().trim().min(1).max(200).optional(),
@@ -46,6 +47,7 @@ export async function POST(request: Request) {
 
     const job: EmailJobDoc = {
       type: body.type,
+      person_id: body.person_id ?? null,
       campaign_id: null,
       template_id: body.type === "template" ? body.template_id ?? null : null,
       ses_credential_id: body.ses_credential_id ?? null,

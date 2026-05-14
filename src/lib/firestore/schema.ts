@@ -31,7 +31,13 @@ export type PersonDoc = {
   /** Person may belong to multiple groups within the tenant. */
   group_ids: string[];
   custom: Record<string, unknown>;
+  /** Legacy global opt-out from the tenant (older unsubscribe links). */
   unsubscribed_at?: number | null;
+  /**
+   * Per-sender opt-out: keys are normalized From addresses the person has
+   * unsubscribed from; values are epoch ms when they opted out.
+   */
+  unsubscribed_from?: Record<string, number>;
   created_at: number;
   updated_at: number;
 };
@@ -52,6 +58,8 @@ export type EmailJobType = "template" | "raw_html" | "raw_text";
 
 export type EmailJobDoc = {
   type: EmailJobType;
+  /** When set, used for signed unsubscribe links and default merge fields. */
+  person_id?: string | null;
   /** Set when the job was created from a campaign launch. */
   campaign_id?: string | null;
   template_id?: string | null;
