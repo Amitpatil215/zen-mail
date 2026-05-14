@@ -54,6 +54,7 @@ export function CampaignWizard() {
   const [variablesText, setVariablesText] = useState("{}");
   const [ccText, setCcText] = useState("");
   const [bccText, setBccText] = useState("");
+  const [trackEmailOpen, setTrackEmailOpen] = useState(false);
   const [groupIds, setGroupIds] = useState<string[]>([]);
   const [scheduledLocal, setScheduledLocal] = useState(() =>
     formatDatetimeLocalValue(Date.now() + 60 * 60 * 1000)
@@ -90,6 +91,7 @@ export function CampaignWizard() {
           setVariablesText(JSON.stringify(c.variables ?? {}, null, 2));
           setCcText(Array.isArray(c.cc) ? (c.cc as string[]).join(", ") : "");
           setBccText(Array.isArray(c.bcc) ? (c.bcc as string[]).join(", ") : "");
+          setTrackEmailOpen(c.track_email_open === true);
         }
 
         const [credsRes, tplRes, groupsRes] = await Promise.all([
@@ -155,6 +157,7 @@ export function CampaignWizard() {
       cc,
       bcc,
       max_retries: 3,
+      track_email_open: trackEmailOpen,
     };
     const fe = fromEmail.trim();
     if (fe) payload.from_email = fe;
@@ -173,6 +176,7 @@ export function CampaignWizard() {
     bccText,
     fromEmail,
     fromName,
+    trackEmailOpen,
     templates,
   ]);
 
@@ -349,6 +353,8 @@ export function CampaignWizard() {
           onCcText={setCcText}
           bccText={bccText}
           onBccText={setBccText}
+          trackEmailOpen={trackEmailOpen}
+          onTrackEmailOpen={setTrackEmailOpen}
           groups={groups}
           groupIds={groupIds}
           onToggleGroup={toggleGroup}

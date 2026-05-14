@@ -21,6 +21,7 @@ export async function writeCampaignEmailJobs(params: {
   subject: string;
   baseVariables: Record<string, unknown>;
   maxRetries: number;
+  trackEmailOpen: boolean;
   recipients: CampaignRecipient[];
 }): Promise<{ created: number }> {
   const now = nowMs();
@@ -36,6 +37,7 @@ export async function writeCampaignEmailJobs(params: {
       const variables = mergePersonVariables(params.baseVariables, r);
       const job: EmailJobDoc = {
         type: "template",
+        campaign_id: params.campaignId,
         template_id: params.templateId,
         ses_credential_id: params.sesCredentialId,
         from_email: params.fromEmail,
@@ -57,6 +59,9 @@ export async function writeCampaignEmailJobs(params: {
         locked_by: null,
         ses_message_id: null,
         last_error: null,
+        track_email_open: params.trackEmailOpen,
+        email_opened: false,
+        email_opened_at: null,
         created_at: now,
         updated_at: now,
       };

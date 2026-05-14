@@ -65,6 +65,7 @@ export async function POST(request: Request) {
       groups,
       template: { id: body.template_id, name: tpl.name, subject: tpl.subject },
       scheduled_at: body.scheduled_at,
+      track_email_open: body.track_email_open,
       rendered_html,
     });
   } catch (e) {

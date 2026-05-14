@@ -28,6 +28,7 @@ export function CreateJobDialog(props: { open: boolean; onClose: () => void; onC
   const [subject, setSubject] = useState("");
   const [variablesText, setVariablesText] = useState("{}");
   const [variablesError, setVariablesError] = useState<string | null>(null);
+  const [trackEmailOpen, setTrackEmailOpen] = useState(false);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -80,6 +81,7 @@ export function CreateJobDialog(props: { open: boolean; onClose: () => void; onC
         setToEmail("");
         setCcEmail("");
         setBccEmail("");
+        setTrackEmailOpen(false);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to load form data.");
       } finally {
@@ -134,6 +136,7 @@ export function CreateJobDialog(props: { open: boolean; onClose: () => void; onC
           subject: subject.trim() || selectedTemplate?.subject || "Template email",
           variables: parsed.value,
           idempotency_key,
+          track_email_open: trackEmailOpen,
         }),
       });
       if (!res.ok) throw new Error(await res.text());
@@ -162,6 +165,8 @@ export function CreateJobDialog(props: { open: boolean; onClose: () => void; onC
       templateId={templateId}
       subject={subject}
       variablesText={variablesText}
+      trackEmailOpen={trackEmailOpen}
+      onChangeTrackEmailOpen={setTrackEmailOpen}
       onClose={onClose}
       onCreateJob={createJob}
       onChangeSesCredentialId={(next) => {

@@ -17,6 +17,7 @@ export const CampaignPayload = z.object({
   subject: z.string().trim().min(1).max(200),
   variables: z.record(z.string(), z.unknown()).optional().default({}),
   max_retries: z.number().int().min(0).max(10).optional().default(3),
+  track_email_open: z.boolean().optional().default(false),
 });
 
 export type CampaignPayloadIn = z.infer<typeof CampaignPayload>;

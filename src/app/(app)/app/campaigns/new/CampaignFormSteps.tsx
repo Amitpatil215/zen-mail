@@ -19,6 +19,7 @@ export type PreviewResponse = {
   template: { id: string; name: string; subject: string };
   scheduled_at: number;
   rendered_html: string | null;
+  track_email_open: boolean;
 };
 
 type Props = {
@@ -43,6 +44,8 @@ type Props = {
   onCcText: (v: string) => void;
   bccText: string;
   onBccText: (v: string) => void;
+  trackEmailOpen: boolean;
+  onTrackEmailOpen: (v: boolean) => void;
   groups: GroupRow[];
   groupIds: string[];
   onToggleGroup: (id: string) => void;
@@ -193,6 +196,20 @@ export function CampaignFormSteps(props: Props) {
             onChange={(e) => props.onBccText(e.target.value)}
           />
         </div>
+        <label className="flex cursor-pointer items-start gap-2 md:col-span-2">
+          <input
+            type="checkbox"
+            className="mt-1 size-4 shrink-0 rounded border-border"
+            checked={props.trackEmailOpen}
+            onChange={(e) => props.onTrackEmailOpen(e.target.checked)}
+          />
+          <span className="text-sm leading-snug">
+            <span className="font-medium">Track email opens</span>
+            <span className="mt-0.5 block text-xs text-muted-foreground">
+              Adds a hidden image to HTML on each job so the first open is recorded. Requires PUBLIC_BASE_URL.
+            </span>
+          </span>
+        </label>
       </div>
     );
   }
@@ -241,6 +258,10 @@ export function CampaignFormSteps(props: Props) {
             <div>
               <span className="text-muted-foreground">Template subject line: </span>
               {p.template.subject}
+            </div>
+            <div>
+              <span className="text-muted-foreground">Track opens: </span>
+              {p.track_email_open ? "On" : "Off"}
             </div>
           </div>
           {p.recipients_sample.length ? (

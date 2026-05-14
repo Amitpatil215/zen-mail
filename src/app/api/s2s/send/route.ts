@@ -18,6 +18,7 @@ const Body = z.object({
   scheduled_at: z.number().int().optional(),
   idempotency_key: z.string().trim().min(8).max(200),
   max_retries: z.number().int().min(0).max(10).optional().default(3),
+  track_email_open: z.boolean().optional().default(false),
 });
 
 export async function POST(request: Request) {
@@ -52,6 +53,7 @@ export async function POST(request: Request) {
 
     const job: EmailJobDoc = {
       type: body.type,
+      campaign_id: null,
       template_id: body.type === "template" ? body.template_id ?? null : null,
       to: body.to,
       cc: body.cc,
@@ -70,6 +72,9 @@ export async function POST(request: Request) {
       locked_by: null,
       ses_message_id: null,
       last_error: null,
+      track_email_open: body.track_email_open,
+      email_opened: false,
+      email_opened_at: null,
       created_at: now,
       updated_at: now,
     };

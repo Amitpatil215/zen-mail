@@ -27,6 +27,8 @@ export function CreateJobDialogView(props: {
   templateId: string;
   subject: string;
   variablesText: string;
+  trackEmailOpen: boolean;
+  onChangeTrackEmailOpen: (next: boolean) => void;
   onClose: () => void;
   onCreateJob: () => void;
   onChangeSesCredentialId: (next: string) => void;
@@ -157,6 +159,22 @@ export function CreateJobDialogView(props: {
             />
             {props.variablesError ? <div className="text-sm text-destructive">{props.variablesError}</div> : null}
           </div>
+
+          <label className="flex cursor-pointer items-start gap-2 md:col-span-2">
+            <input
+              type="checkbox"
+              className="mt-1 size-4 shrink-0 rounded border-border"
+              checked={props.trackEmailOpen}
+              onChange={(e) => props.onChangeTrackEmailOpen(e.target.checked)}
+            />
+            <span className="text-sm leading-snug">
+              <span className="font-medium">Track email opens</span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                Adds a hidden image to HTML so the first open is stored on this job. Requires PUBLIC_BASE_URL on the
+                server.
+              </span>
+            </span>
+          </label>
         </div>
 
         {props.error ? <div className="mt-3 text-sm text-destructive">{props.error}</div> : null}

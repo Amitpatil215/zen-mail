@@ -64,7 +64,7 @@ export async function sendEmailJob(params: {
   if (!htmlBody && !textBody) throw new Error("Email must have html or text.");
 
   const baseUrl = process.env.PUBLIC_BASE_URL?.replace(/\/$/, "") ?? "";
-  if (baseUrl && htmlBody) {
+  if (params.job.track_email_open === true && baseUrl && htmlBody) {
     const sig = signParams({ t: params.tenantId, j: params.jobId });
     const pixel = `${baseUrl}/t/open?t=${encodeURIComponent(params.tenantId)}&j=${encodeURIComponent(params.jobId)}&sig=${sig}`;
     htmlBody = `${htmlBody}\n<img src="${pixel}" width="1" height="1" style="display:none" alt="" />`;

@@ -52,6 +52,8 @@ export type EmailJobType = "template" | "raw_html" | "raw_text";
 
 export type EmailJobDoc = {
   type: EmailJobType;
+  /** Set when the job was created from a campaign launch. */
+  campaign_id?: string | null;
   template_id?: string | null;
   ses_credential_id?: string | null;
   from_email?: string | null;
@@ -73,6 +75,11 @@ export type EmailJobDoc = {
   locked_by?: string | null;
   ses_message_id?: string | null;
   last_error?: string | null;
+  /** When true, a signed tracking pixel may be appended to HTML at send time (requires PUBLIC_BASE_URL). */
+  track_email_open?: boolean;
+  /** First successful open pixel load (set once). */
+  email_opened?: boolean;
+  email_opened_at?: number | null;
   created_at: number;
   updated_at: number;
 };
@@ -129,6 +136,8 @@ export type CampaignDoc = {
   subject: string;
   variables: Record<string, unknown>;
   max_retries: number;
+  /** Copied onto each job when the campaign is launched. Omitted on legacy drafts = off. */
+  track_email_open?: boolean;
   /** Filled when status becomes launched. */
   recipient_count: number | null;
   launched_at: number | null;

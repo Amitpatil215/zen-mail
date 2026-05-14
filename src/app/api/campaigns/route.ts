@@ -72,6 +72,7 @@ export async function POST(request: Request) {
       subject: body.subject,
       variables: body.variables,
       max_retries: body.max_retries,
+      track_email_open: body.track_email_open,
       recipient_count: null,
       launched_at: null,
       created_at: now,

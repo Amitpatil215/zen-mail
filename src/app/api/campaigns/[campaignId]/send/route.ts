@@ -82,6 +82,7 @@ export async function POST(request: Request, ctx: RouteCtx) {
       subject: campaign.subject,
       baseVariables: campaign.variables,
       maxRetries: campaign.max_retries,
+      trackEmailOpen: campaign.track_email_open === true,
       recipients,
     });
 

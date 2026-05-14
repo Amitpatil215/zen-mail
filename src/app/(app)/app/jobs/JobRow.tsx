@@ -6,6 +6,7 @@ type EmailJob = {
   id: string;
   status?: string | null;
   type?: string | null;
+  campaign_id?: string | null;
   subject?: string | null;
   from_email?: string | null;
   from_name?: string | null;
@@ -14,6 +15,9 @@ type EmailJob = {
   bcc?: string[] | null;
   template_id?: string | null;
   ses_credential_id?: string | null;
+  track_email_open?: boolean | null;
+  email_opened?: boolean | null;
+  email_opened_at?: number | null;
   ses_message_id?: string | null;
   retry_count?: number | null;
   max_retries?: number | null;
@@ -113,6 +117,7 @@ export function JobRow(props: { job: EmailJob }) {
       {open ? (
         <div className="mt-3 grid gap-3 border-t border-border pt-3 md:grid-cols-3">
           <Field label="Job id" value={job.id} />
+          <Field label="Campaign id" value={job.campaign_id ?? "—"} />
           <Field label="Type" value={(job.type ?? "").toString() || "—"} />
           <Field label="Retries" value={retryText} />
 
@@ -130,6 +135,16 @@ export function JobRow(props: { job: EmailJob }) {
 
           <Field label="Template id" value={job.template_id ?? "—"} />
           <Field label="SES credential id" value={job.ses_credential_id ?? "—"} />
+          <Field
+            label="Open tracking"
+            value={
+              job.track_email_open === true
+                ? job.email_opened === true
+                  ? `Opened${job.email_opened_at ? ` (${fmtMs(job.email_opened_at)})` : ""}`
+                  : "Enabled (not opened yet)"
+                : "Off"
+            }
+          />
           <Field label="Recipients (all)" value={recipients.all.length ? recipients.all.join(", ") : "—"} />
         </div>
       ) : null}
