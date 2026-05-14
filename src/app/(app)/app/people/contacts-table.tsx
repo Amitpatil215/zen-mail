@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import type { Group, Person } from "./people-types";
+import { personSubscriptionDetail, personSubscriptionSummary } from "./person-subscription-label";
 
 function groupLabel(groups: Group[], id: string) {
   return groups.find((g) => g.id === id)?.name ?? id.slice(0, 6);
@@ -30,7 +31,7 @@ export function ContactsTable({ people, groups, onEdit }: Props) {
             <th className="px-4 py-3 font-medium">Email</th>
             <th className="px-4 py-3 font-medium">Name</th>
             <th className="px-4 py-3 font-medium">Groups</th>
-            <th className="px-4 py-3 font-medium">Status</th>
+            <th className="px-4 py-3 font-medium">Unsubscribe</th>
             <th className="w-24 px-4 py-3 text-right font-medium">Actions</th>
           </tr>
         </thead>
@@ -70,12 +71,21 @@ export function ContactsTable({ people, groups, onEdit }: Props) {
                   )}
                 </div>
               </td>
-              <td className="px-4 py-3 text-xs text-muted-foreground">
-                {p.unsubscribed_at ? (
-                  <span className="text-destructive">Unsubscribed</span>
-                ) : (
-                  <span>Active</span>
-                )}
+              <td
+                className="max-w-[200px] px-4 py-3 text-xs text-muted-foreground"
+                title={personSubscriptionDetail(p)}
+              >
+                <span
+                  className={
+                    p.unsubscribed_at
+                      ? "font-medium text-destructive"
+                      : Object.keys(p.unsubscribed_from ?? {}).length
+                        ? "font-medium text-amber-700 dark:text-amber-500"
+                        : ""
+                  }
+                >
+                  {personSubscriptionSummary(p)}
+                </span>
               </td>
               <td className="px-4 py-3 text-right">
                 <Button

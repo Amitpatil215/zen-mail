@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/app/(app)/app/templates/_components/ConfirmDialog";
+import { EditPersonSubscriptionSection } from "./edit-person-subscription-section";
 import { GroupCheckboxes } from "./group-checkboxes";
 import type { Group, Person } from "./people-types";
 import { peopleAuthedFetch } from "./people-fetch";
@@ -32,6 +33,8 @@ export function EditPersonDialog({
   const [first, setFirst] = useState("");
   const [last, setLast] = useState("");
   const [groupIds, setGroupIds] = useState<string[]>([]);
+  const [globalUnsub, setGlobalUnsub] = useState(false);
+  const [fromMap, setFromMap] = useState<Record<string, number>>({});
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -43,6 +46,8 @@ export function EditPersonDialog({
     setFirst(person.first_name ?? "");
     setLast(person.last_name ?? "");
     setGroupIds(person.group_ids ?? []);
+    setGlobalUnsub(Boolean(person.unsubscribed_at));
+    setFromMap({ ...(person.unsubscribed_from ?? {}) });
     setError(null);
     setDeleteConfirmOpen(false);
   }, [person]);
@@ -73,6 +78,8 @@ export function EditPersonDialog({
           first_name: first.trim() || undefined,
           last_name: last.trim() || undefined,
           group_ids: gids,
+          unsubscribed_at: globalUnsub ? (person.unsubscribed_at ?? Date.now()) : null,
+          unsubscribed_from: fromMap,
         }),
       });
       if (!res.ok) throw new Error(await res.text());
@@ -110,7 +117,7 @@ export function EditPersonDialog({
       <DialogContent>
         <DialogTitle>Edit contact</DialogTitle>
         <DialogDescription>
-          Update email, name, and group membership for this person.
+          Update email, name, groups, and subscription / unsubscribe preferences for this person.
         </DialogDescription>
 
         <div className="grid gap-3">
@@ -145,6 +152,19 @@ export function EditPersonDialog({
               idPrefix="edit"
             />
           </div>
+          <EditPersonSubscriptionSection
+            globalUnsub={globalUnsub}
+            onGlobalUnsubChange={setGlobalUnsub}
+            fromKeys={Object.keys(fromMap).sort()}
+            onRemoveSender={(key) => {
+              setFromMap((prev) => {
+                const next = { ...prev };
+                delete next[key];
+                return next;
+              });
+            }}
+            onClearAllSenders={() => setFromMap({})}
+          />
         </div>
 
         {error ? (

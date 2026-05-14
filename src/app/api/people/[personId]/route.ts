@@ -11,6 +11,10 @@ const PatchBody = z
     last_name: z.string().trim().max(60).optional(),
     tags: z.array(z.string().trim().min(1).max(40)).optional(),
     group_ids: z.array(z.string().trim().min(1)).optional(),
+    unsubscribed_at: z.number().int().nullable().optional(),
+    unsubscribed_from: z
+      .record(z.string().trim().min(1).max(254), z.number().int())
+      .optional(),
   })
   .refine((o) => Object.keys(o).length > 0, { message: "No fields to update." });
 
@@ -48,6 +52,16 @@ export async function PATCH(
     if (body.last_name !== undefined) patch.last_name = body.last_name;
     if (body.tags !== undefined) patch.tags = body.tags;
     if (body.group_ids !== undefined) patch.group_ids = body.group_ids;
+    if (body.unsubscribed_at !== undefined) {
+      patch.unsubscribed_at = body.unsubscribed_at;
+    }
+    if (body.unsubscribed_from !== undefined) {
+      const next: Record<string, number> = {};
+      for (const [k, v] of Object.entries(body.unsubscribed_from)) {
+        next[k.trim().toLowerCase()] = v;
+      }
+      patch.unsubscribed_from = next;
+    }
 
     await ref.update(patch);
     return Response.json({ ok: true });
