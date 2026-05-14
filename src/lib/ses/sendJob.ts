@@ -1,7 +1,7 @@
 import { SendEmailCommand } from "@aws-sdk/client-ses";
 import { getServerDb } from "@/lib/firestore/server";
-import type { EmailJobDoc, TemplateDoc } from "@/lib/firestore/schema";
-import { renderLiquid } from "@/lib/templates/liquid";
+import type { EmailJobDoc } from "@/lib/firestore/schema";
+import { renderStoredTemplate } from "@/lib/templates/renderStoredTemplate";
 import { createSesClient, type SesCredsDoc } from "@/lib/ses/client";
 import { decryptSesKeyFields } from "@/lib/ses/sesKeyStorage";
 import { signParams } from "@/lib/crypto/signing";
@@ -34,22 +34,6 @@ async function getSesCreds(params: {
   return decryptSesKeyFields(doc.data() as SesCredsDoc);
 }
 
-async function renderTemplate(tenantId: string, templateId: string, vars: unknown) {
-  const db = getServerDb();
-  const snap = await db
-    .collection("tenants")
-    .doc(tenantId)
-    .collection("templates")
-    .doc(templateId)
-    .get();
-  if (!snap.exists) throw new Error("Template not found.");
-  const tpl = snap.data() as TemplateDoc;
-  const subject = await renderLiquid(tpl.subject, vars);
-  const html = await renderLiquid(tpl.body_html, vars);
-  const text = tpl.body_text ? await renderLiquid(tpl.body_text, vars) : null;
-  return { subject, html, text };
-}
-
 export async function sendEmailJob(params: {
   tenantId: string;
   jobId: string;
@@ -71,7 +55,7 @@ export async function sendEmailJob(params: {
   if (params.job.type === "template") {
     const templateId = params.job.template_id;
     if (!templateId) throw new Error("Missing template_id.");
-    const rendered = await renderTemplate(params.tenantId, templateId, params.job.variables);
+    const rendered = await renderStoredTemplate(params.tenantId, templateId, params.job.variables);
     subject = rendered.subject;
     htmlBody = rendered.html;
     textBody = rendered.text;

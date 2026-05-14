@@ -112,3 +112,27 @@ export type EmailEventDoc = {
   created_at: number;
 };
 
+export type CampaignStatus = "draft" | "launched";
+
+export type CampaignDoc = {
+  name: string;
+  status: CampaignStatus;
+  template_id: string;
+  group_ids: string[];
+  /** When queued email jobs should first run (epoch ms). */
+  scheduled_at: number;
+  ses_credential_id: string | null;
+  from_email: string | null;
+  from_name: string | null;
+  cc: string[];
+  bcc: string[];
+  subject: string;
+  variables: Record<string, unknown>;
+  max_retries: number;
+  /** Filled when status becomes launched. */
+  recipient_count: number | null;
+  launched_at: number | null;
+  created_at: number;
+  updated_at: number;
+};
+
