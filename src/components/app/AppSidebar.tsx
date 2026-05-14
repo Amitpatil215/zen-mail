@@ -31,7 +31,7 @@ const navItems: Array<{
   { href: "/app/settings/tenants", label: "Settings", icon: Settings },
   { href: "/app/settings/domains-ses", label: "SES", icon: Mail },
   { href: "/app/settings/api-keys", label: "API Keys", icon: Key },
-  { href: "/app/people", label: "People", icon: Users, comingSoon: true },
+  { href: "/app/people", label: "People", icon: Users },
   { href: "/app/campaigns", label: "Campaigns", icon: Megaphone, comingSoon: true },
 ];
 

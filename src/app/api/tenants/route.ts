@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { requireIdToken } from "@/lib/api/auth";
 import { getServerDb, nowMs } from "@/lib/firestore/server";
-import type { TenantDoc, UserTenantDoc } from "@/lib/firestore/schema";
+import type { GroupDoc, TenantDoc, UserTenantDoc } from "@/lib/firestore/schema";
 import { defaultTenantTemplates } from "@/lib/templates/defaultTenantTemplates";
 
 export async function GET(request: Request) {
@@ -45,10 +45,19 @@ export async function POST(request: Request) {
     const now = nowMs();
 
     const tenantRef = db.collection("tenants").doc();
+    const defaultGroupRef = tenantRef.collection("groups").doc();
+    const defaultGroupDoc: GroupDoc = {
+      name: "Default",
+      is_default: true,
+      created_at: now,
+      updated_at: now,
+    };
+
     const tenantDoc: TenantDoc = {
       name: body.name || "My Org",
       created_at: now,
       updated_at: now,
+      people_group_ids_migrated: true,
     };
 
     const membershipRef = db.collection("user_tenant").doc();
@@ -76,6 +85,8 @@ export async function POST(request: Request) {
         email: user.email ?? null,
         updated_at: now,
       }, { merge: true });
+
+      tx.set(defaultGroupRef, defaultGroupDoc);
 
       const seed = defaultTenantTemplates();
       for (const t of seed) {

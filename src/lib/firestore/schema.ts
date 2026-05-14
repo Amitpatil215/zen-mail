@@ -4,6 +4,15 @@ export type TenantDoc = {
   name: string;
   created_at: number;
   updated_at: number;
+  /** Set after one-time backfill of `group_ids` on legacy people docs. */
+  people_group_ids_migrated?: boolean;
+};
+
+export type GroupDoc = {
+  name: string;
+  is_default: boolean;
+  created_at: number;
+  updated_at: number;
 };
 
 export type UserTenantDoc = {
@@ -19,6 +28,8 @@ export type PersonDoc = {
   first_name?: string;
   last_name?: string;
   tags: string[];
+  /** Person may belong to multiple groups within the tenant. */
+  group_ids: string[];
   custom: Record<string, unknown>;
   unsubscribed_at?: number | null;
   created_at: number;
