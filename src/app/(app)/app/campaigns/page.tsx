@@ -59,12 +59,15 @@ export default function CampaignsPage() {
                     {typeof c.recipient_count === "number" ? ` · ${c.recipient_count} jobs` : ""}
                   </div>
                 </div>
-                <div className="flex shrink-0 gap-2">
+                <div className="flex shrink-0 flex-wrap gap-2">
                   {c.status === "draft" ? (
                     <Button asChild variant="outline" size="sm" type="button">
                       <Link href={`/app/campaigns/new?draft=${encodeURIComponent(c.id)}`}>Continue</Link>
                     </Button>
                   ) : null}
+                  <Button asChild variant="outline" size="sm" type="button">
+                    <Link href={`/app/campaigns/${encodeURIComponent(c.id)}`}>Recipients</Link>
+                  </Button>
                 </div>
               </div>
             ))
