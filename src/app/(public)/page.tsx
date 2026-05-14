@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { AuthButton } from "@/components/auth/AuthButton";
+import { TemplateVariablesSection } from "./TemplateVariablesSection";
 
 function FeatureCard({
   title,
@@ -80,6 +81,9 @@ export default function LandingPage() {
             <Button asChild size="lg" variant="outline">
               <Link href="#how-it-works">How it works</Link>
             </Button>
+            <Button asChild size="lg" variant="outline">
+              <Link href="#template-variables">Template variables</Link>
+            </Button>
           </div>
         </section>
 
@@ -115,7 +119,15 @@ export default function LandingPage() {
           <h2 className="text-xl font-semibold tracking-tight">Core features</h2>
           <div className="grid gap-4 md:grid-cols-3">
             <FeatureCard title="Templates + preview">
-              Labels, sample data variables, and light/dark previews.
+              Liquid templates, light/dark previews, and built-in{" "}
+              <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">
+                system.*
+              </code>{" "}
+              fields (see{" "}
+              <Link className="font-medium text-foreground underline" href="#template-variables">
+                docs below
+              </Link>
+              ).
             </FeatureCard>
             <FeatureCard title="People management">
               Contacts, tags, and custom columns per tenant.
@@ -127,13 +139,16 @@ export default function LandingPage() {
               Record delivered, bounced, and complaint events.
             </FeatureCard>
             <FeatureCard title="Tracking + unsubscribe">
-              Open tracking pixel and signed unsubscribe routes.
+              Open tracking pixel, signed one-click unsubscribe links, and
+              per-sender opt-out stored on each person.
             </FeatureCard>
             <FeatureCard title="Assets + API keys">
               Foldered assets for email images and S2S API keys.
             </FeatureCard>
           </div>
         </section>
+
+        <TemplateVariablesSection />
 
         <section id="developers" className="grid gap-4">
           <div className="flex flex-col gap-1">
