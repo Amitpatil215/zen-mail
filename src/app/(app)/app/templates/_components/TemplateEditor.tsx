@@ -133,7 +133,20 @@ export function TemplateEditor(props: {
           <h1 className="text-2xl font-semibold tracking-tight">
             {props.mode === "create" ? "New template" : "Edit template"}
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">Stored in Firestore per tenant.</p>
+          {props.mode === "create" ? (
+            <p className="mt-1 text-sm text-muted-foreground">
+              Create a template using{" "}
+              <a
+                href="https://chatgpt.com/g/g-6a04cd899d208191be623e647ed15888-zen-mail-templater"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline decoration-muted-foreground/60 underline-offset-2 transition-colors hover:text-foreground hover:decoration-foreground/40"
+              >
+                our GPT
+              </a>
+              .
+            </p>
+          ) : null}
         </div>
         <div className="flex items-center gap-2">
           <a href={props.onCancelHref} className="text-sm text-muted-foreground hover:underline">
