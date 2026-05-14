@@ -106,9 +106,8 @@ export function EditPersonDialog({
   }
 
   return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
         <DialogTitle>Edit contact</DialogTitle>
         <DialogDescription>
           Update email, name, and group membership for this person.
@@ -175,22 +174,21 @@ export function EditPersonDialog({
             </Button>
           </div>
         </div>
-        </DialogContent>
-      </Dialog>
-      <ConfirmDialog
-        open={deleteConfirmOpen}
-        title="Delete this contact?"
-        description={
-          person
-            ? `Remove ${person.email} from your audience. This cannot be undone.`
-            : undefined
-        }
-        confirmText="Delete"
-        cancelText="Cancel"
-        destructive
-        onClose={() => setDeleteConfirmOpen(false)}
-        onConfirm={() => void confirmDelete()}
-      />
-    </>
+        <ConfirmDialog
+          open={deleteConfirmOpen}
+          title="Delete this contact?"
+          description={
+            person
+              ? `Remove ${person.email} from your audience. This cannot be undone.`
+              : undefined
+          }
+          confirmText="Delete"
+          cancelText="Cancel"
+          destructive
+          onClose={() => setDeleteConfirmOpen(false)}
+          onConfirm={() => void confirmDelete()}
+        />
+      </DialogContent>
+    </Dialog>
   );
 }
