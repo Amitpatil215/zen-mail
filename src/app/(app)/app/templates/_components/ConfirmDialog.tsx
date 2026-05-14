@@ -24,7 +24,7 @@ export function ConfirmDialog(props: {
   if (!props.open) return null;
 
   return (
-    <div className="fixed inset-0 z-50">
+    <div className="fixed inset-0 z-[100]">
       <div className="absolute inset-0 bg-black/50" onClick={props.onClose} />
       <div className="absolute left-1/2 top-1/2 w-[92vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-card p-5 shadow-xl">
         <div className="text-sm font-semibold">{props.title}</div>

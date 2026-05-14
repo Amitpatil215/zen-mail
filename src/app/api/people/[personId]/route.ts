@@ -57,3 +57,35 @@ export async function PATCH(
     return new Response(msg, { status });
   }
 }
+
+export async function DELETE(
+  request: Request,
+  ctx: { params: Promise<{ personId: string }> }
+) {
+  try {
+    const user = await requireIdToken(request);
+    const tenantId = request.headers.get("x-tenant-id")?.trim();
+    if (!tenantId) return new Response("Missing x-tenant-id", { status: 400 });
+    await requireTenantMembership(tenantId, user.uid);
+
+    const { personId } = await ctx.params;
+    if (!personId?.trim()) return new Response("Missing person id", { status: 400 });
+
+    const db = getServerDb();
+    const ref = db
+      .collection("tenants")
+      .doc(tenantId)
+      .collection("people")
+      .doc(personId);
+
+    const snap = await ref.get();
+    if (!snap.exists) return new Response("Not found", { status: 404 });
+
+    await ref.delete();
+    return Response.json({ ok: true });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Bad request";
+    const status = msg === "Not found" ? 404 : 400;
+    return new Response(msg, { status });
+  }
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -8,6 +8,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/app/(app)/app/templates/_components/ConfirmDialog";
 import { GroupCheckboxes } from "./group-checkboxes";
 import type { Group, Person } from "./people-types";
 import { peopleAuthedFetch } from "./people-fetch";
@@ -33,6 +34,8 @@ export function EditPersonDialog({
   const [groupIds, setGroupIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const deleteInFlight = useRef(false);
 
   useEffect(() => {
     if (!person) return;
@@ -41,7 +44,12 @@ export function EditPersonDialog({
     setLast(person.last_name ?? "");
     setGroupIds(person.group_ids ?? []);
     setError(null);
+    setDeleteConfirmOpen(false);
   }, [person]);
+
+  useEffect(() => {
+    if (!open) setDeleteConfirmOpen(false);
+  }, [open]);
 
   async function save() {
     if (!person) return;
@@ -77,9 +85,30 @@ export function EditPersonDialog({
     }
   }
 
+  async function confirmDelete() {
+    if (!person || deleteInFlight.current) return;
+    deleteInFlight.current = true;
+    setError(null);
+    try {
+      const res = await peopleAuthedFetch(`/api/people/${person.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error(await res.text());
+      setDeleteConfirmOpen(false);
+      onSaved();
+      onOpenChange(false);
+    } catch (e) {
+      setDeleteConfirmOpen(false);
+      setError(e instanceof Error ? e.message : "Failed to delete.");
+    } finally {
+      deleteInFlight.current = false;
+    }
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
         <DialogTitle>Edit contact</DialogTitle>
         <DialogDescription>
           Update email, name, and group membership for this person.
@@ -123,19 +152,45 @@ export function EditPersonDialog({
           <div className="text-xs text-destructive">{error}</div>
         ) : null}
 
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <Button
             type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
+            variant="destructive"
+            size="sm"
+            disabled={!person || loading}
+            onClick={() => setDeleteConfirmOpen(true)}
           >
-            Cancel
+            Delete
           </Button>
-          <Button type="button" onClick={save} disabled={loading || !person}>
-            {loading ? "Saving…" : "Save"}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="button" onClick={save} disabled={loading || !person}>
+              {loading ? "Saving…" : "Save"}
+            </Button>
+          </div>
         </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        title="Delete this contact?"
+        description={
+          person
+            ? `Remove ${person.email} from your audience. This cannot be undone.`
+            : undefined
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        destructive
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={() => void confirmDelete()}
+      />
+    </>
   );
 }
